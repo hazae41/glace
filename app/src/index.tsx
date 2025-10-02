@@ -8,15 +8,13 @@ React;
 
 export function App() {
   useEffect(() => {
-    console.log("hello");
+    console.log("Hello world");
   }, [])
 
   return <div>Hello world</div>
 }
 
-let html: string;
-
-if (process.env.NODE_ENV === "production" || typeof window !== "undefined") {
+if (typeof process === "undefined" || process.env.NODE_ENV === "production") {
   hydrateRoot(document.body, <App />);
 } else {
   const prerender = async (node: ReactNode) => {
@@ -40,4 +38,6 @@ if (process.env.NODE_ENV === "production" || typeof window !== "undefined") {
   document.body.innerHTML = await prerender(<App />)
 }
 
-export { html };
+
+
+

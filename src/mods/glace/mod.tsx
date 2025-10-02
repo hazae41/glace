@@ -134,6 +134,9 @@ export class Glace {
             script.textContent = ""
 
             // deno-lint-ignore no-explicit-any
+            globalThis.window = window as any
+
+            // deno-lint-ignore no-explicit-any
             globalThis.document = document as any
 
             await import(path.resolve(server.path))
@@ -176,7 +179,9 @@ export class Glace {
       promises.push(bundle(entrypoint))
 
     await this.client.collect()
+
     await new Promise(ok => setTimeout(ok, 100)) // TODO: find a better solution
+
     await this.server.collect()
 
     await Promise.all(promises)
