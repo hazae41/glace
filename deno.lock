@@ -274,7 +274,6 @@
   },
   "workspace": {
     "dependencies": [
-      "jsr:@hazae41/mutex@^2.2.2",
       "jsr:@hazae41/phobos@^2.0.10",
       "jsr:@hazae41/tscousin@^1.0.20"
     ],

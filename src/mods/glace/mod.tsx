@@ -125,17 +125,13 @@ export class Glace {
             stack.defer(() => rmSync(input, { force: true }))
 
             if (modes.includes("client")) {
-              const client = await this.client.include(input)
-
-              script.src = redot(path.relative(path.dirname(exitpoint), client))
-
-              // NOOP
+              script.src = redot(path.relative(path.dirname(exitpoint), await this.client.include(input)))
             } else {
               script.remove()
             }
 
             if (modes.includes("static")) {
-              const server = await this.server.include(input)
+              const output = await this.server.include(input)
 
               using _ = await global.lockOrWait()
 
@@ -151,7 +147,7 @@ export class Glace {
               // @ts-ignore
               globalThis.location = window.location
 
-              await import(path.resolve(server))
+              await import(path.resolve(output))
 
               // deno-lint-ignore ban-ts-comment
               // @ts-ignore
@@ -178,13 +174,11 @@ export class Glace {
             stack.defer(() => rmSync(input, { force: true }))
 
             if (modes.includes("client")) {
-              const client = await this.client.include(input)
+              const output = await this.client.include(input)
 
-              stack.defer(() => rmSync(client, { force: true }))
+              stack.defer(() => rmSync(output, { force: true }))
 
-              script.textContent = readFileSync(client, "utf8").trim()
-
-              // NOOP
+              script.textContent = readFileSync(output, "utf8").trim()
             } else {
               script.remove()
             }
