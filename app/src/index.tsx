@@ -3,13 +3,12 @@
 
 import React, { type ReactNode, useEffect } from "react";
 import { hydrateRoot } from "react-dom/client";
-import { log } from "../src/chunk.tsx";
 
 React;
 
 export function App() {
   useEffect(() => {
-    log("hello");
+    console.log("hello");
   }, [])
 
   return <div>Hello world</div>
@@ -17,15 +16,15 @@ export function App() {
 
 let html: string;
 
-if (process.env.NODE_ENV === "production") {
+if (process.env.NODE_ENV === "production" || typeof window !== "undefined") {
   hydrateRoot(document.body, <App />);
 } else {
-  const server = await import("react-dom/static");
+  const prerender = async (node: ReactNode) => {
+    const { default: { prerender } } = await import("react-dom/static")
 
-  async function prerenderToString(node: ReactNode) {
     using stack = new DisposableStack()
 
-    const stream = await server.default.prerender(node)
+    const stream = await prerender(node)
     const reader = stream.prelude.getReader()
 
     stack.defer(() => reader.releaseLock())
@@ -38,7 +37,7 @@ if (process.env.NODE_ENV === "production") {
     return html
   }
 
-  html = await prerenderToString(<App />)
+  html = await prerender(<App />)
 }
 
 export { html };
