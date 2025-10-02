@@ -180,7 +180,8 @@ export class Glace {
 
     await this.client.collect()
 
-    await new Promise(ok => setTimeout(ok, 100)) // TODO: find a better solution
+    // TODO: wait for Deno.bundle to be fixed
+    await new Promise(ok => setTimeout(ok, 100))
 
     await this.server.collect()
 
