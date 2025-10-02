@@ -21,7 +21,7 @@ export class Bundler {
   async file(file: string) {
     const nonce = crypto.randomUUID().slice(0, 8)
 
-    const input = path.join(tmpdir(), `./${nonce}.js`)
+    const input = path.join(tmpdir(), `./${nonce}.module.js`)
 
     writeFileSync(input, `export * from "${path.resolve(file)}";`)
 
@@ -40,7 +40,7 @@ export class Bundler {
   async text(text: string) {
     const nonce = crypto.randomUUID().slice(0, 8)
 
-    const input = path.join(tmpdir(), `./${nonce}.js`)
+    const input = path.join(tmpdir(), `./${nonce}.module.js`)
 
     writeFileSync(input, text)
 
@@ -60,12 +60,14 @@ export class Bundler {
     const outputs = new Map<string, Output>()
 
     for await (const output of bundle(this.inputs, this.exitrootdir, this.development)) {
-      const nonce = path.basename(output.path, path.extname(output.path))
+      const name = path.basename(output.path, path.extname(output.path))
 
-      if (nonce.startsWith("chunk-") || nonce.startsWith("static.")) {
+      if (!name.endsWith(".module")) {
         writeFileSync(output.path, output.text)
         continue
       }
+
+      const nonce = path.basename(name, ".module")
 
       const digest = crypto.createHash("sha256").update(output.text).digest("hex").slice(0, 8)
       const repath = path.join(this.exitrootdir, `./${digest}.js`)
@@ -89,11 +91,12 @@ export class Glace {
 
   constructor(
     readonly entrypoints: readonly string[],
-    readonly exitrootdir: string
+    readonly exitrootdir: string,
+    readonly development: boolean
   ) {
     this.exittempdir = path.join(this.exitrootdir, "./tmp")
 
-    this.client = new Bundler(this.exitrootdir, false)
+    this.client = new Bundler(this.exitrootdir, this.development)
     this.server = new Bundler(this.exittempdir, true)
 
     return

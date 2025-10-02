@@ -18,7 +18,7 @@ export function App() {
 let html: string;
 
 if (process.env.NODE_ENV === "production") {
-  hydrateRoot(document.getElementById("root")!, <App />);
+  hydrateRoot(document.body, <App />);
 } else {
   const server = await import("react-dom/static");
 

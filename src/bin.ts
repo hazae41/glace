@@ -10,6 +10,7 @@ const entrypoints = new Array<string>()
 
 const options: {
   directory?: string;
+  development?: boolean;
 } = {}
 
 for (let i = 2; i < process.argv.length; i++) {
@@ -25,13 +26,24 @@ for (let i = 2; i < process.argv.length; i++) {
     continue
   }
 
+  if (arg.startsWith("--dev=")) {
+    options.development = arg.slice("--dev=".length) === "true"
+    continue
+  }
+
+  if (arg.startsWith("--dev")) {
+    options.development = true
+    continue
+  }
+
   entrypoints.push(arg)
 }
 
 const {
-  directory = "./dst"
+  directory = "./dst",
+  development = false
 } = options
 
-await new Glace(entrypoints, directory).bundle()
+await new Glace(entrypoints, directory, development).bundle()
 
 process.exit(0)
