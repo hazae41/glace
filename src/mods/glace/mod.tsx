@@ -133,12 +133,10 @@ export class Glace {
 
             script.textContent = ""
 
-            const { html } = await import(path.resolve(server.path))
+            // deno-lint-ignore no-explicit-any
+            globalThis.document = document as any
 
-            if (html == null)
-              return
-
-            document.body.innerHTML = html
+            await import(path.resolve(server.path))
 
             return
           } else {

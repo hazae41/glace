@@ -37,7 +37,7 @@ if (process.env.NODE_ENV === "production" || typeof window !== "undefined") {
     return html
   }
 
-  html = await prerender(<App />)
+  document.body.innerHTML = await prerender(<App />)
 }
 
 export { html };
