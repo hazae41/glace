@@ -18,12 +18,31 @@ export class Bundler {
     readonly externals: string[] = [],
   ) { }
 
-  async bundle(file: string) {
+  async file(file: string) {
     const nonce = crypto.randomUUID().slice(0, 8)
 
     const input = path.join(tmpdir(), `./${nonce}.js`)
 
     writeFileSync(input, `export * from "${path.resolve(file)}";`)
+
+    this.inputs.push(input)
+
+    const outputs = await this.result.promise
+
+    const output = outputs.get(nonce)
+
+    if (output == null)
+      throw new Error("Output not found")
+
+    return output
+  }
+
+  async text(text: string) {
+    const nonce = crypto.randomUUID().slice(0, 8)
+
+    const input = path.join(tmpdir(), `./${nonce}.js`)
+
+    writeFileSync(input, text)
 
     this.inputs.push(input)
 
@@ -58,13 +77,13 @@ export class Bundler {
 
 export class Glace {
 
-  readonly bundler: Bundler
+  readonly client: Bundler
 
   constructor(
     readonly entrypoints: readonly string[],
     readonly exitrootdir: string
   ) {
-    this.bundler = new Bundler(this.exitrootdir)
+    this.client = new Bundler(this.exitrootdir)
   }
 
   async bundle() {
@@ -88,7 +107,7 @@ export class Glace {
             if (url.protocol !== "file:")
               throw new Error("Unsupported protocol")
 
-            const output = await this.bundler.bundle(url.pathname)
+            const output = await this.client.file(url.pathname)
             const target = path.relative(path.dirname(exitpoint), output.path)
 
             script.type = "module"
@@ -100,8 +119,16 @@ export class Glace {
             //   return
 
             // document.body.innerHTML = await prerenderToString(React.createElement(App))
+
+            return
           } else {
-            // TODO
+            const output = await this.client.text(script.textContent)
+            const target = path.relative(path.dirname(exitpoint), output.path)
+
+            script.type = "module"
+            script.src = redot(target)
+
+            return
           }
         }
 
@@ -129,7 +156,7 @@ export class Glace {
     for (const entrypoint of this.entrypoints)
       promises.push(bundle(entrypoint))
 
-    await this.bundler.collect()
+    await this.client.collect()
 
     await Promise.all(promises)
 
