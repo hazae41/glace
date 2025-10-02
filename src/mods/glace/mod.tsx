@@ -14,8 +14,8 @@ export class Bundler {
   readonly result = Promise.withResolvers<Map<string, Output>>()
 
   constructor(
-    readonly directory: string,
-    readonly externals: string[] = [],
+    readonly exitrootdir: string,
+    readonly development: boolean
   ) { }
 
   async file(file: string) {
@@ -59,11 +59,16 @@ export class Bundler {
   async collect() {
     const outputs = new Map<string, Output>()
 
-    for await (const output of bundle(this.inputs, this.directory)) {
+    for await (const output of bundle(this.inputs, this.exitrootdir, this.development)) {
       const nonce = path.basename(output.path, path.extname(output.path))
 
+      if (nonce.startsWith("chunk-") || nonce.startsWith("static.")) {
+        writeFileSync(output.path, output.text)
+        continue
+      }
+
       const digest = crypto.createHash("sha256").update(output.text).digest("hex").slice(0, 8)
-      const repath = path.join(this.directory, `./${digest}.js`)
+      const repath = path.join(this.exitrootdir, `./${digest}.js`)
 
       writeFileSync(repath, output.text)
 
@@ -77,13 +82,21 @@ export class Bundler {
 
 export class Glace {
 
+  readonly exittempdir: string
+
   readonly client: Bundler
+  readonly server: Bundler
 
   constructor(
     readonly entrypoints: readonly string[],
     readonly exitrootdir: string
   ) {
-    this.client = new Bundler(this.exitrootdir)
+    this.exittempdir = path.join(this.exitrootdir, "./tmp")
+
+    this.client = new Bundler(this.exitrootdir, false)
+    this.server = new Bundler(this.exittempdir, true)
+
+    return
   }
 
   async bundle() {
@@ -100,44 +113,49 @@ export class Glace {
       const document = new window.DOMParser().parseFromString(readFileSync(entrypoint, "utf8"), "text/html")
 
       const bundle = async (script: HTMLScriptElement) => {
-        if (script.type === "bundle") {
+        if (script.dataset.bundle != null) {
+          delete script.dataset.bundle
+
           if (script.src) {
             const url = new URL(script.src)
 
             if (url.protocol !== "file:")
               throw new Error("Unsupported protocol")
 
-            const output = await this.client.file(url.pathname)
-            const target = path.relative(path.dirname(exitpoint), output.path)
+            const client = await this.client.file(url.pathname)
+            const server = await this.server.file(url.pathname)
 
             script.type = "module"
-            script.src = redot(target)
+            script.src = redot(path.relative(path.dirname(exitpoint), client.path))
 
-            // const { App } = await import(render)
+            script.textContent = ""
 
-            // if (App == null)
-            //   return
+            const { html } = await import(path.resolve(server.path))
 
-            // document.body.innerHTML = await prerenderToString(React.createElement(App))
+            if (html == null)
+              return
+
+            document.body.innerHTML = html
 
             return
           } else {
-            const output = await this.client.text(script.textContent)
-            const target = path.relative(path.dirname(exitpoint), output.path)
+            const client = await this.client.text(script.textContent)
+            const server = await this.server.text(script.textContent)
 
             script.type = "module"
-            script.src = redot(target)
+            script.src = redot(path.relative(path.dirname(exitpoint), client.path))
+
+            script.textContent = ""
+
+            const { html } = await import(path.resolve(server.path))
+
+            if (html == null)
+              return
+
+            document.body.innerHTML = html
 
             return
           }
-        }
-
-        if (script.type === "nobundle") {
-          // if (script.src) {
-
-          // } else {
-          //   // TODO
-          // }
         }
       }
 
@@ -157,10 +175,12 @@ export class Glace {
       promises.push(bundle(entrypoint))
 
     await this.client.collect()
+    await new Promise(ok => setTimeout(ok, 100)) // TODO: find a better solution
+    await this.server.collect()
 
     await Promise.all(promises)
 
-    rmSync(path.join(this.exitrootdir, "./tmp"), { recursive: true, force: true })
+    rmSync(this.exittempdir, { recursive: true, force: true })
   }
 
 }

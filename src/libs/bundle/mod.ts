@@ -47,16 +47,15 @@ export async function prebundle(input: string, output: string, external: string[
   }
 }
 
-export async function* bundle(inputs: string[], target: string, external: string[] = []): AsyncGenerator<Output> {
+export async function* bundle(inputs: string[], target: string, development: boolean): AsyncGenerator<Output> {
   if ("Deno" in globalThis) {
     const result = await Deno.bundle({
       entrypoints: inputs,
       format: "esm",
       outputDir: target,
       codeSplitting: true,
-      minify: true,
+      minify: !development,
       write: false,
-      external
     })
 
     for (const warning of result.warnings)
@@ -83,7 +82,7 @@ export async function* bundle(inputs: string[], target: string, external: string
       outdir: target,
       splitting: true,
       write: false,
-      external
+      minify: !development,
     })
 
     for (const warning of result.warnings)

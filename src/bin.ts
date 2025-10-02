@@ -34,4 +34,4 @@ const {
 
 await new Glace(entrypoints, directory).bundle()
 
-close()
+process.exit(0)
