@@ -1,5 +1,5 @@
 import { ancestor } from "@/libs/ancestor/mod.ts";
-import { bundle, type Output } from "@/libs/bundle/mod.ts";
+import { bundle } from "@/libs/bundle/mod.ts";
 import { redot } from "@/libs/redot/mod.ts";
 import { Window, type HTMLScriptElement } from "happy-dom";
 import crypto from "node:crypto";
@@ -12,7 +12,7 @@ export class Bundler {
 
   readonly inputs = new Array<string>()
 
-  readonly result = Promise.withResolvers<Map<string, Output>>()
+  readonly result = Promise.withResolvers<Map<string, string>>()
 
   constructor(
     readonly exitrootdir: string,
@@ -22,15 +22,15 @@ export class Bundler {
   async file(file: string) {
     const nonce = crypto.randomUUID().slice(0, 8)
 
-    const input = path.join(tmpdir(), `./${nonce}.module.js`)
+    const input = path.join(tmpdir(), `./${nonce}.js`)
 
     writeFileSync(input, `export * from "${path.resolve(file)}";`)
 
     this.inputs.push(input)
 
-    const outputs = await this.result.promise
+    const result = await this.result.promise
 
-    const output = outputs.get(nonce)
+    const output = result.get(nonce)
 
     if (output == null)
       throw new Error("Output not found")
@@ -41,15 +41,15 @@ export class Bundler {
   async text(text: string) {
     const nonce = crypto.randomUUID().slice(0, 8)
 
-    const input = path.join(tmpdir(), `./${nonce}.module.js`)
+    const input = path.join(tmpdir(), `./${nonce}.js`)
 
     writeFileSync(input, text)
 
     this.inputs.push(input)
 
-    const outputs = await this.result.promise
+    const result = await this.result.promise
 
-    const output = outputs.get(nonce)
+    const output = result.get(nonce)
 
     if (output == null)
       throw new Error("Output not found")
@@ -58,27 +58,31 @@ export class Bundler {
   }
 
   async collect() {
-    const outputs = new Map<string, Output>()
+    const renames = new Map<string, string>()
+    const repaths = new Map<string, string>()
 
     for await (const output of bundle(this.inputs, this.exitrootdir, this.development)) {
       const name = path.basename(output.path, path.extname(output.path))
 
-      if (!name.endsWith(".module")) {
-        writeFileSync(output.path, output.text)
-        continue
-      }
-
-      const nonce = path.basename(name, ".module")
-
-      const digest = crypto.createHash("sha256").update(output.text).digest("hex").slice(0, 8)
-      const repath = path.join(this.exitrootdir, `./${digest}.js`)
+      const rename = crypto.createHash("sha256").update(output.text).digest("hex").slice(0, 8)
+      const repath = path.join(this.exitrootdir, `./${rename}.js`)
 
       writeFileSync(repath, output.text)
 
-      outputs.set(nonce, { path: repath, text: output.text, hash: digest })
+      renames.set(name, rename)
+      repaths.set(name, repath)
     }
 
-    this.result.resolve(outputs)
+    for (const repath of repaths.values()) {
+      let text = readFileSync(repath, "utf8")
+
+      for (const [name, rename] of renames.entries())
+        text = text.replaceAll(name, rename)
+
+      writeFileSync(repath, text)
+    }
+
+    this.result.resolve(repaths)
   }
 
 }
@@ -130,7 +134,7 @@ export class Glace {
             const server = await this.server.file(url.pathname)
 
             script.type = "module"
-            script.src = redot(path.relative(path.dirname(exitpoint), client.path))
+            script.src = redot(path.relative(path.dirname(exitpoint), client))
 
             script.textContent = ""
 
@@ -140,7 +144,10 @@ export class Glace {
             // deno-lint-ignore no-explicit-any
             globalThis.document = document as any
 
-            await import(path.resolve(server.path))
+            // deno-lint-ignore no-explicit-any
+            globalThis.location = window.location as any
+
+            await import(path.resolve(server))
 
             return
           } else {
@@ -148,11 +155,11 @@ export class Glace {
             const server = await this.server.text(script.textContent)
 
             script.type = "module"
-            script.src = redot(path.relative(path.dirname(exitpoint), client.path))
+            script.src = redot(path.relative(path.dirname(exitpoint), client))
 
             script.textContent = ""
 
-            const { html } = await import(path.resolve(server.path))
+            const { html } = await import(path.resolve(server))
 
             if (html == null)
               return
