@@ -6,6 +6,7 @@ import crypto from "node:crypto";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { setImmediate } from "node:timers/promises";
 
 export class Bundler {
 
@@ -181,7 +182,7 @@ export class Glace {
     await this.client.collect()
 
     // TODO: wait for Deno.bundle to be fixed
-    await new Promise(ok => setTimeout(ok, 100))
+    await new Promise(ok => setImmediate(ok))
 
     await this.server.collect()
 
