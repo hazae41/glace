@@ -1,0 +1,22 @@
+{
+  "name": "@hazae41/glace",
+  "version": "1.0.0",
+  "imports": {
+    "@/": "./src/",
+    "@hazae41/phobos": "jsr:@hazae41/phobos@^2.0.10",
+    "@hazae41/tscousin": "jsr:@hazae41/tscousin@^1.0.20"
+  },
+  "exports": {
+    ".": "./src/mod.ts"
+  },
+  "lint": {
+    "rules": {
+      "exclude": [
+        "no-namespace"
+      ]
+    }
+  },
+  "unstable": [
+    "bundle"
+  ]
+}

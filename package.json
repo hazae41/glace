@@ -1,0 +1,47 @@
+{
+  "type": "module",
+  "name": "@hazae41/glace",
+  "version": "1.0.0",
+  "description": "Create immutable websites",
+  "homepage": "https://github.com/hazae41/glace",
+  "repository": "github:hazae41/glace",
+  "author": "hazae41",
+  "license": "MIT",
+  "main": "./dist/cjs/index.cjs",
+  "module": "./dist/esm/index.mjs",
+  "types": "./dist/types/index.d.ts",
+  "scripts": {
+    "examine": "deno lint ./src && deno check ./src && deno test ./src",
+    "prepare": "rm -rf ./out && tsc && tscousin",
+    "version": "deno -RW ./x.vsync.ts && git add deno.json",
+    "install": "deno -RW ./x.dsync.ts && deno install"
+  },
+  "files": [
+    "./out"
+  ],
+  "exports": {
+    ".": {
+      "types": "./out/mod.d.ts",
+      "import": "./out/mod.js"
+    }
+  },
+  "devDependencies": {
+    "@hazae41/phobos": "^2.0.10",
+    "@hazae41/tscousin": "^1.0.20",
+    "@types/react": "^19.1.16",
+    "@types/react-dom": "^19.1.9",
+    "typescript": "^5.9.3"
+  },
+  "keywords": [
+    "immutable"
+  ],
+  "dependencies": {
+    "esbuild": "^0.25.10",
+    "happy-dom": "^19.0.2",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "bin": {
+    "glace": "./out/bin.js"
+  }
+}
