@@ -4,17 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sample Page</title>
-  <script type="module" data-bundle src="./index.tsx"></script>
-  <script type="module" data-bundle>
+  <script type="module" data-bundle="client,static" src="./index.tsx"></script>
+  <script type="module" data-bundle="static">
     if (process.env.NODE_ENV === "development")
       console.log("development")
     else
       console.log("production")
   </script>
 </head>
-
-<body>
-  <div id="root" />
-</body>
 
 </html>

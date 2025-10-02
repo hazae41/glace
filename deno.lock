@@ -3,6 +3,7 @@
   "specifiers": {
     "jsr:@hazae41/phobos@^2.0.10": "2.0.10",
     "jsr:@hazae41/tscousin@^1.0.20": "1.0.20",
+    "npm:@hazae41/mutex@^2.2.2": "2.2.2",
     "npm:@hazae41/phobos@^2.0.10": "2.0.10",
     "npm:@hazae41/tscousin@^1.0.20": "1.0.20",
     "npm:@types/node@*": "24.2.0",
@@ -153,6 +154,19 @@
       "os": ["win32"],
       "cpu": ["x64"]
     },
+    "@hazae41/box@4.0.4": {
+      "integrity": "sha512-PlZ4tF8EDHCDoAufrldRICOXcUPNYNC2V75ZaKKS+88F8qAAJh5Mt7gFhbbvZQNqtEVDx/QzxlDB+3pjqZs+7Q=="
+    },
+    "@hazae41/future@2.0.1": {
+      "integrity": "sha512-kuCYPEquroSVFMBhX/iEsbK0eOAHFimvXJnFKe6AeJh8gp92jpGI8wqWRjtlpJaUAfrgKNBMHJPZkQNchEjatg=="
+    },
+    "@hazae41/mutex@2.2.2": {
+      "integrity": "sha512-IeszMz3YgtAVd10yp/HviM0A1uSq+tHV7j9+rckI9unu2YDIZaWz/BFkRizFxZqLc0HFyjTuN3akb0BANPEo4w==",
+      "dependencies": [
+        "@hazae41/box",
+        "@hazae41/future"
+      ]
+    },
     "@hazae41/phobos@2.0.10": {
       "integrity": "sha512-o+TV5xgsDx23j1rLFPZKKOj9nfMCog4FCQiEHw8IdiUjm4fiJiR3XfH2qHBzBLjN/w3RLoohcfkuaoww7WSYjw=="
     },
@@ -260,11 +274,13 @@
   },
   "workspace": {
     "dependencies": [
+      "jsr:@hazae41/mutex@^2.2.2",
       "jsr:@hazae41/phobos@^2.0.10",
       "jsr:@hazae41/tscousin@^1.0.20"
     ],
     "packageJson": {
       "dependencies": [
+        "npm:@hazae41/mutex@^2.2.2",
         "npm:@hazae41/phobos@^2.0.10",
         "npm:@hazae41/tscousin@^1.0.20",
         "npm:@types/react-dom@^19.1.9",

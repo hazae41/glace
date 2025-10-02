@@ -3,12 +3,13 @@
 
 import React, { type ReactNode, useEffect } from "react";
 import { hydrateRoot } from "react-dom/client";
+import { log } from "./libs/test/lol/mod.ts";
 
 React;
 
 export function App() {
   useEffect(() => {
-    console.log("Hello world");
+    log("Hello world");
   }, [])
 
   return <div>Hello world</div>

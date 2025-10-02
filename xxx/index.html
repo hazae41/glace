@@ -4,7 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sample Page</title>
-  <script type="module" data-bundle="client,static" src="./index.tsx"></script>
+  <script type="module" data-bundle="client,static">
+    document.body.innerHTML = "<h1>Hello World</h1>";
+  </script>
 </head>
 
 </html>

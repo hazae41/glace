@@ -1,11 +1,14 @@
 import { ancestor } from "@/libs/ancestor/mod.ts";
 import { bundle } from "@/libs/bundle/mod.ts";
 import { redot } from "@/libs/redot/mod.ts";
+import { Mutex } from "@hazae41/mutex";
 import { Window, type HTMLScriptElement } from "happy-dom";
 import crypto from "node:crypto";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { setImmediate } from "node:timers/promises";
+
+const global = new Mutex(globalThis)
 
 export class Bundler {
 
@@ -99,8 +102,12 @@ export class Glace {
       const document = new window.DOMParser().parseFromString(readFileSync(entrypoint, "utf8"), "text/html")
 
       const bundle = async (script: HTMLScriptElement) => {
-        if (script.dataset.bundle != null) {
-          delete script.dataset.bundle
+        const bundle = script.dataset.bundle
+
+        delete script.dataset.bundle
+
+        if (bundle != null) {
+          const modes = bundle.split(",").map(s => s.trim().toLowerCase())
 
           if (script.src) {
             const url = new URL(script.src)
@@ -117,24 +124,47 @@ export class Glace {
 
             stack.defer(() => rmSync(input, { force: true }))
 
-            const client = await this.client.include(input)
-            const server = await this.server.include(input)
+            if (modes.includes("client")) {
+              const client = await this.client.include(input)
 
-            script.type = "module"
-            script.src = redot(path.relative(path.dirname(exitpoint), client))
+              script.src = redot(path.relative(path.dirname(exitpoint), client))
 
-            script.textContent = ""
+              // NOOP
+            } else {
+              script.remove()
+            }
 
-            // deno-lint-ignore no-explicit-any
-            globalThis.window = window as any
+            if (modes.includes("static")) {
+              const server = await this.server.include(input)
 
-            // deno-lint-ignore no-explicit-any
-            globalThis.document = document as any
+              using _ = await global.lockOrWait()
 
-            // deno-lint-ignore no-explicit-any
-            globalThis.location = window.location as any
+              // deno-lint-ignore ban-ts-comment
+              // @ts-ignore
+              globalThis.window = window
 
-            await import(path.resolve(server))
+              // deno-lint-ignore ban-ts-comment
+              // @ts-ignore
+              globalThis.document = document
+
+              // deno-lint-ignore ban-ts-comment
+              // @ts-ignore
+              globalThis.location = window.location
+
+              await import(path.resolve(server))
+
+              // deno-lint-ignore ban-ts-comment
+              // @ts-ignore
+              delete globalThis.window
+
+              // deno-lint-ignore ban-ts-comment
+              // @ts-ignore
+              delete globalThis.document
+
+              // deno-lint-ignore ban-ts-comment
+              // @ts-ignore
+              delete globalThis.location
+            }
 
             return
           } else {
@@ -147,20 +177,49 @@ export class Glace {
 
             stack.defer(() => rmSync(input, { force: true }))
 
-            const client = await this.client.include(input)
-            const server = await this.server.include(input)
+            if (modes.includes("client")) {
+              const client = await this.client.include(input)
 
-            script.type = "module"
-            script.src = redot(path.relative(path.dirname(exitpoint), client))
+              stack.defer(() => rmSync(client, { force: true }))
 
-            script.textContent = ""
+              script.textContent = readFileSync(client, "utf8").trim()
 
-            const { html } = await import(path.resolve(server))
+              // NOOP
+            } else {
+              script.remove()
+            }
 
-            if (html == null)
-              return
+            if (modes.includes("static")) {
+              const server = await this.server.include(input)
 
-            document.body.innerHTML = html
+              using _ = await global.lockOrWait()
+
+              // deno-lint-ignore ban-ts-comment
+              // @ts-ignore
+              globalThis.window = window
+
+              // deno-lint-ignore ban-ts-comment
+              // @ts-ignore
+              globalThis.document = document
+
+              // deno-lint-ignore ban-ts-comment
+              // @ts-ignore
+              globalThis.location = window.location
+
+              await import(path.resolve(server))
+
+              // deno-lint-ignore ban-ts-comment
+              // @ts-ignore
+              delete globalThis.window
+
+              // deno-lint-ignore ban-ts-comment
+              // @ts-ignore
+              delete globalThis.document
+
+              // deno-lint-ignore ban-ts-comment
+              // @ts-ignore
+              delete globalThis.location
+            }
 
             return
           }
