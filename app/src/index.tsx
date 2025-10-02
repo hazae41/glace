@@ -37,7 +37,3 @@ if (typeof process === "undefined" || process.env.NODE_ENV === "production") {
 
   document.body.innerHTML = await prerender(<App />)
 }
-
-
-
-

@@ -4,7 +4,6 @@ import { redot } from "@/libs/redot/mod.ts";
 import { Window, type HTMLScriptElement } from "happy-dom";
 import crypto from "node:crypto";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import path from "node:path";
 import { setImmediate } from "node:timers/promises";
 
@@ -19,18 +18,14 @@ export class Bundler {
     readonly development: boolean
   ) { }
 
-  async include(file: string) {
-    const nonce = crypto.randomUUID().slice(0, 8)
-
-    const input = path.join(tmpdir(), `./${nonce}.js`)
-
-    writeFileSync(input, `export * from "${path.resolve(file)}";`)
+  async include(input: string) {
+    const name = path.basename(input, path.extname(input))
 
     this.inputs.push(input)
 
     const result = await this.result.promise
 
-    const output = result.get(nonce)
+    const output = result.get(name)
 
     if (output == null)
       throw new Error("Output not found")
@@ -43,10 +38,12 @@ export class Bundler {
     const repaths = new Map<string, string>()
 
     for await (const output of bundle(this.inputs, this.exitrootdir, this.development)) {
+      mkdirSync(path.dirname(output.path), { recursive: true })
+
       const name = path.basename(output.path, path.extname(output.path))
 
       const rename = crypto.createHash("sha256").update(output.text).digest("hex").slice(0, 8)
-      const repath = path.join(this.exitrootdir, `./${rename}.js`)
+      const repath = path.join(path.dirname(output.path), `./${rename}.js`)
 
       writeFileSync(repath, output.text)
 
@@ -111,8 +108,17 @@ export class Glace {
             if (url.protocol !== "file:")
               throw new Error("Unsupported protocol")
 
-            const client = await this.client.include(url.pathname)
-            const server = await this.server.include(url.pathname)
+            using stack = new DisposableStack()
+
+            const nonce = crypto.randomUUID().slice(0, 8)
+            const input = path.join(path.dirname(entrypoint), `./${nonce}.js`)
+
+            writeFileSync(input, `export * from "${path.resolve(url.pathname)}";`)
+
+            stack.defer(() => rmSync(input, { force: true }))
+
+            const client = await this.client.include(input)
+            const server = await this.server.include(input)
 
             script.type = "module"
             script.src = redot(path.relative(path.dirname(exitpoint), client))
@@ -134,14 +140,15 @@ export class Glace {
           } else {
             using stack = new DisposableStack()
 
-            const file = path.join(path.dirname(entrypoint), `./${crypto.randomUUID().slice(0, 8)}.js`)
+            const nonce = crypto.randomUUID().slice(0, 8)
+            const input = path.join(path.dirname(entrypoint), `./${nonce}.js`)
 
-            writeFileSync(file, script.textContent)
+            writeFileSync(input, script.textContent)
 
-            stack.defer(() => rmSync(file, { force: true }))
+            stack.defer(() => rmSync(input, { force: true }))
 
-            const client = await this.client.include(file)
-            const server = await this.server.include(file)
+            const client = await this.client.include(input)
+            const server = await this.server.include(input)
 
             script.type = "module"
             script.src = redot(path.relative(path.dirname(exitpoint), client))
@@ -184,7 +191,7 @@ export class Glace {
 
     await Promise.all(promises)
 
-    rmSync(this.exittempdir, { recursive: true, force: true })
+    // rmSync(this.exittempdir, { recursive: true, force: true })
   }
 
 }
