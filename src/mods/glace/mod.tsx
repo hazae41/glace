@@ -3,7 +3,7 @@ import { bundle, type Output } from "@/libs/bundle/mod.ts";
 import { redot } from "@/libs/redot/mod.ts";
 import { Window, type HTMLScriptElement } from "happy-dom";
 import crypto from "node:crypto";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -56,31 +56,31 @@ export class Bundler {
 
 }
 
-const prebundler = new Bundler("./tmp", ["react", "react-dom"])
-
-const bundler = new Bundler("./dst")
-
 export class Glace {
 
+  readonly bundler: Bundler
+
   constructor(
-    readonly entrypoints: readonly string[]
-  ) { }
+    readonly entrypoints: readonly string[],
+    readonly exitrootdir: string
+  ) {
+    this.bundler = new Bundler(this.exitrootdir)
+  }
 
   async bundle() {
-    mkdirSync("./tmp", { recursive: true })
-    mkdirSync("./dst", { recursive: true })
+    const entryrootdir = ancestor(this.entrypoints)
 
-    const basedir = ancestor(this.entrypoints)
+    mkdirSync(path.join(this.exitrootdir, "./tmp"), { recursive: true })
 
-    async function bundle(entrypoint: string) {
-      const exitpoint = path.join("./dst", path.relative(basedir, entrypoint))
+    const bundle = async (entrypoint: string) => {
+      const exitpoint = path.join(this.exitrootdir, path.relative(entryrootdir, entrypoint))
 
       mkdirSync(path.dirname(exitpoint), { recursive: true })
 
       const window = new Window({ url: "file://" + path.resolve(entrypoint) });
       const document = new window.DOMParser().parseFromString(readFileSync(entrypoint, "utf8"), "text/html")
 
-      async function bundle(script: HTMLScriptElement) {
+      const bundle = async (script: HTMLScriptElement) => {
         if (script.type === "bundle") {
           if (script.src) {
             const url = new URL(script.src)
@@ -88,7 +88,7 @@ export class Glace {
             if (url.protocol !== "file:")
               throw new Error("Unsupported protocol")
 
-            const output = await bundler.bundle(url.pathname)
+            const output = await this.bundler.bundle(url.pathname)
             const target = path.relative(path.dirname(exitpoint), output.path)
 
             script.type = "module"
@@ -129,9 +129,11 @@ export class Glace {
     for (const entrypoint of this.entrypoints)
       promises.push(bundle(entrypoint))
 
-    await bundler.collect()
+    await this.bundler.collect()
 
     await Promise.all(promises)
+
+    rmSync(path.join(this.exitrootdir, "./tmp"), { recursive: true, force: true })
   }
 
 }

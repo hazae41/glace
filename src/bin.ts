@@ -6,6 +6,32 @@ import { Glace } from "./mods/glace/mod.tsx";
 
 React;
 
-await new Glace(process.argv.slice(2)).bundle()
+const entrypoints = new Array<string>()
+
+const options: {
+  directory?: string;
+} = {}
+
+for (let i = 2; i < process.argv.length; i++) {
+  const arg = process.argv[i]
+
+  if (arg.startsWith("--out=")) {
+    options.directory = arg.slice("--out=".length)
+    continue
+  }
+
+  if (arg.startsWith("--out")) {
+    options.directory = process.argv[++i]
+    continue
+  }
+
+  entrypoints.push(arg)
+}
+
+const {
+  directory = "./dst"
+} = options
+
+await new Glace(entrypoints, directory).bundle()
 
 close()
