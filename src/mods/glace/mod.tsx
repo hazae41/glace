@@ -19,31 +19,12 @@ export class Bundler {
     readonly development: boolean
   ) { }
 
-  async file(file: string) {
+  async include(file: string) {
     const nonce = crypto.randomUUID().slice(0, 8)
 
     const input = path.join(tmpdir(), `./${nonce}.js`)
 
     writeFileSync(input, `export * from "${path.resolve(file)}";`)
-
-    this.inputs.push(input)
-
-    const result = await this.result.promise
-
-    const output = result.get(nonce)
-
-    if (output == null)
-      throw new Error("Output not found")
-
-    return output
-  }
-
-  async text(text: string) {
-    const nonce = crypto.randomUUID().slice(0, 8)
-
-    const input = path.join(tmpdir(), `./${nonce}.js`)
-
-    writeFileSync(input, text)
 
     this.inputs.push(input)
 
@@ -130,8 +111,8 @@ export class Glace {
             if (url.protocol !== "file:")
               throw new Error("Unsupported protocol")
 
-            const client = await this.client.file(url.pathname)
-            const server = await this.server.file(url.pathname)
+            const client = await this.client.include(url.pathname)
+            const server = await this.server.include(url.pathname)
 
             script.type = "module"
             script.src = redot(path.relative(path.dirname(exitpoint), client))
@@ -151,8 +132,16 @@ export class Glace {
 
             return
           } else {
-            const client = await this.client.text(script.textContent)
-            const server = await this.server.text(script.textContent)
+            using stack = new DisposableStack()
+
+            const file = path.join(path.dirname(entrypoint), `./${crypto.randomUUID().slice(0, 8)}.js`)
+
+            writeFileSync(file, script.textContent)
+
+            stack.defer(() => rmSync(file, { force: true }))
+
+            const client = await this.client.include(file)
+            const server = await this.server.include(file)
 
             script.type = "module"
             script.src = redot(path.relative(path.dirname(exitpoint), client))
