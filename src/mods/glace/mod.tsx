@@ -8,7 +8,7 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { setImmediate } from "node:timers/promises";
 
-const global = new Mutex(globalThis)
+const mutex = new Mutex(undefined)
 
 export class Bundler {
 
@@ -133,7 +133,7 @@ export class Glace {
             if (modes.includes("static")) {
               const output = await this.server.include(input)
 
-              using _ = await global.lockOrWait()
+              using _ = await mutex.lockOrWait()
 
               // deno-lint-ignore ban-ts-comment
               // @ts-ignore
@@ -186,7 +186,7 @@ export class Glace {
             if (modes.includes("static")) {
               const server = await this.server.include(input)
 
-              using _ = await global.lockOrWait()
+              using _ = await mutex.lockOrWait()
 
               // deno-lint-ignore ban-ts-comment
               // @ts-ignore
