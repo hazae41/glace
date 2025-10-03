@@ -281,6 +281,7 @@
       "dependencies": [
         "npm:@hazae41/mutex@^2.2.2",
         "npm:@hazae41/phobos@^2.0.10",
+        "npm:@hazae41/rewind@^1.0.23",
         "npm:@hazae41/tscousin@^1.0.20",
         "npm:@types/react-dom@^19.1.9",
         "npm:@types/react@^19.1.16",

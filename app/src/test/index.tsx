@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-process-global
 /// <reference lib="dom" />
 
+import { Rewind } from "@hazae41/rewind";
 import React, { type ReactNode, useEffect } from "react";
 import { hydrateRoot } from "react-dom/client";
 import { log } from "../libs/test/lol/mod.ts";
@@ -12,10 +13,16 @@ export function App() {
     log("Test");
   }, [])
 
-  return <div>Test</div>
+  return <div className="text-red-400">
+    Test
+  </div>
 }
 
 if (typeof process === "undefined" || process.env.NODE_ENV === "production") {
+  console.log(location.href)
+
+  await new Rewind(document).compile()
+
   hydrateRoot(document.body, <App />);
 } else {
   const prerender = async (node: ReactNode) => {
