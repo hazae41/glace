@@ -178,7 +178,7 @@ export class Glace {
 
               stack.defer(() => rmSync(output, { force: true }))
 
-              script.textContent = readFileSync(output, "utf8").trim()
+              script.textContent = `\n    ${readFileSync(output, "utf8").trim()}\n  `
             } else {
               script.remove()
             }
@@ -244,7 +244,7 @@ export class Glace {
 
     await Promise.all(promises)
 
-    // rmSync(this.exittempdir, { recursive: true, force: true })
+    rmSync(this.exittempdir, { recursive: true, force: true })
   }
 
 }
