@@ -14,7 +14,7 @@ deno install jsr:@hazae41/glace
 
 ## Features
 
-- Compatible with any client-side or SSG framework (e.g. React)
+- Works with any client-side and/or static-side framework (e.g. React)
 - Focused on security and simplicity without degrading performances
 - Supply-chain hardened with the bare minimum dependencies
 - Built on web principles with HTML-in-HTML-out bundling
