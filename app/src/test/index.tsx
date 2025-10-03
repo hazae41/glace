@@ -19,12 +19,19 @@ export function App() {
 }
 
 if (typeof process === "undefined" || process.env.NODE_ENV === "production") {
-  console.log(location.href)
+  await new Rewind(document).hydrate()
 
-  await new Rewind(document).compile()
+  // bliss emoji
+  console.log("\u{1F60C}")
 
   hydrateRoot(document.body, <App />);
 } else {
+  for (const link of document.querySelectorAll("link")) {
+    console.log(link.href);
+  }
+
+  await new Rewind(document).prerender()
+
   const prerender = async (node: ReactNode) => {
     const { default: { prerender } } = await import("react-dom/static")
 

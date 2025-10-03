@@ -6,6 +6,7 @@ import crypto from "node:crypto";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { setImmediate } from "node:timers/promises";
+import { redot } from "../../libs/redot/mod.ts";
 
 const mutex = new Mutex(undefined)
 
@@ -234,7 +235,9 @@ export class Glace {
 
         stack.defer(() => rmSync(input, { force: true }))
 
-        link.href = `/${path.relative(this.exitrootdir, await this.client.include(input))}`
+        const output = await this.client.include(input)
+
+        link.href = redot(path.relative(path.dirname(exitpoint), output))
       }
 
       const bundleAsStyle = async (style: HTMLStyleElement) => {
@@ -243,12 +246,12 @@ export class Glace {
 
       const promises = new Array<Promise<void>>()
 
-      for (const script of document.querySelectorAll("script[data-bundle]"))
-        promises.push(bundleAsScript(script as unknown as HTMLScriptElement))
-      for (const style of document.querySelectorAll("style[data-bundle]"))
-        promises.push(bundleAsStyle(style as unknown as HTMLStyleElement))
       for (const link of document.querySelectorAll("link[rel=stylesheet][data-bundle]"))
         promises.push(bundleAsStylesheetLink(link as unknown as HTMLLinkElement))
+      for (const style of document.querySelectorAll("style[data-bundle]"))
+        promises.push(bundleAsStyle(style as unknown as HTMLStyleElement))
+      for (const script of document.querySelectorAll("script[data-bundle]"))
+        promises.push(bundleAsScript(script as unknown as HTMLScriptElement))
 
       await Promise.all(promises)
 
