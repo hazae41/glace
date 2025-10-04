@@ -65,8 +65,6 @@ export class Bundler {
     }
 
     this.result.resolve(repaths)
-
-    return repaths.values()
   }
 
 }
@@ -81,17 +79,13 @@ export class Glace {
     readonly exitrootdir: string,
     readonly development: boolean
   ) {
+    this.server = new Bundler(tmpdir(), true)
     this.client = new Bundler(this.exitrootdir, this.development)
-    this.server = new Bundler(this.exitrootdir, true)
 
     return
   }
 
   async bundle() {
-    const tempinputsdir = path.join(tmpdir(), "./inputs")
-
-    mkdirSync(tempinputsdir, { recursive: true })
-
     const bundleAsHtml = async (entrypoint: string) => {
       const exitpoint = path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))
 
@@ -113,16 +107,12 @@ export class Glace {
           if (url.protocol !== "file:")
             throw new Error("Unsupported protocol")
 
-          using stack = new DisposableStack()
-
           const nonce = crypto.randomUUID().slice(0, 8)
-          const input = path.join(tempinputsdir, path.relative(this.entryrootdir, path.dirname(entrypoint)), `./${nonce}.js`)
+          const input = path.join(tmpdir(), path.relative(this.entryrootdir, path.dirname(entrypoint)), `./${nonce}.js`)
 
           mkdirSync(path.dirname(input), { recursive: true })
 
           writeFileSync(input, `export * from "${path.resolve(url.pathname)}";`)
-
-          stack.defer(() => rmSync(input, { force: true }))
 
           if (modes.includes("client")) {
             script.src = redot(path.relative(path.dirname(exitpoint), await this.client.include(input)))
@@ -166,29 +156,25 @@ export class Glace {
 
           return
         } else {
-          using stack = new DisposableStack()
-
           const nonce = crypto.randomUUID().slice(0, 8)
-          const input = path.join(tempinputsdir, path.relative(this.entryrootdir, path.dirname(entrypoint)), `./${nonce}.js`)
+          const input = path.join(tmpdir(), path.relative(this.entryrootdir, path.dirname(entrypoint)), `./${nonce}.js`)
 
           mkdirSync(path.dirname(input), { recursive: true })
 
           writeFileSync(input, script.textContent)
 
-          stack.defer(() => rmSync(input, { force: true }))
-
           if (modes.includes("client")) {
             const output = await this.client.include(input)
 
-            stack.defer(() => rmSync(output, { force: true }))
-
             script.textContent = `\n    ${readFileSync(output, "utf8").trim()}\n  `
+
+            rmSync(output, { force: true })
           } else {
             script.remove()
           }
 
           if (modes.includes("static")) {
-            const server = await this.server.include(input)
+            const output = await this.server.include(input)
 
             using _ = await mutex.lockOrWait()
 
@@ -206,7 +192,7 @@ export class Glace {
             // @ts-ignore
             globalThis.location = window.location
 
-            await import(path.resolve(server))
+            await import(path.resolve(output))
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
@@ -235,16 +221,12 @@ export class Glace {
 
         const url = new URL(link.href)
 
-        using stack = new DisposableStack()
-
         const nonce = crypto.randomUUID().slice(0, 8)
-        const input = path.join(tempinputsdir, path.relative(this.entryrootdir, path.dirname(entrypoint)), `./${nonce}.css`)
+        const input = path.join(tmpdir(), path.relative(this.entryrootdir, path.dirname(entrypoint)), `./${nonce}.css`)
 
         mkdirSync(path.dirname(input), { recursive: true })
 
         writeFileSync(input, `@import "${path.resolve(url.pathname)}";`)
-
-        stack.defer(() => rmSync(input, { force: true }))
 
         link.href = redot(path.relative(path.dirname(exitpoint), await this.client.include(input)))
       }
@@ -287,12 +269,9 @@ export class Glace {
     // TODO: wait for Deno.bundle to be fixed
     await new Promise(ok => setImmediate(ok))
 
-    const servers = await this.server.collect()
+    await this.server.collect()
 
     await Promise.all(promises)
-
-    for (const output of servers)
-      rmSync(output, { force: true })
 
     return
   }
