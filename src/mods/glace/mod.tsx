@@ -255,12 +255,12 @@ export class Glace {
 
       const promises = new Array<Promise<void>>()
 
-      for (const link of document.querySelectorAll("link[rel=stylesheet][data-bundle]"))
-        promises.push(bundleAsStylesheetLink(link as unknown as HTMLLinkElement))
-      for (const style of document.querySelectorAll("style[data-bundle]"))
-        promises.push(bundleAsStyle(style as unknown as HTMLStyleElement))
       for (const script of document.querySelectorAll("script[data-bundle]"))
         promises.push(bundleAsScript(script as unknown as HTMLScriptElement))
+      for (const style of document.querySelectorAll("style[data-bundle]"))
+        promises.push(bundleAsStyle(style as unknown as HTMLStyleElement))
+      for (const link of document.querySelectorAll("link[rel=stylesheet][data-bundle]"))
+        promises.push(bundleAsStylesheetLink(link as unknown as HTMLLinkElement))
 
       await Promise.all(promises)
 
