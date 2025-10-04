@@ -6,10 +6,9 @@ import { Glace } from "./mods/glace/mod.tsx";
 
 React;
 
-const entrypoints = new Array<string>()
-
 const options: {
-  directory?: string;
+  entryrootdir?: string;
+  exitrootdir?: string;
   development?: boolean;
 } = {}
 
@@ -17,12 +16,12 @@ for (let i = 2; i < process.argv.length; i++) {
   const arg = process.argv[i]
 
   if (arg.startsWith("--out=")) {
-    options.directory = arg.slice("--out=".length)
+    options.exitrootdir = arg.slice("--out=".length)
     continue
   }
 
   if (arg.startsWith("--out")) {
-    options.directory = process.argv[++i]
+    options.exitrootdir = process.argv[++i]
     continue
   }
 
@@ -36,14 +35,15 @@ for (let i = 2; i < process.argv.length; i++) {
     continue
   }
 
-  entrypoints.push(arg)
+  options.entryrootdir = arg
 }
 
 const {
-  directory = "./dst",
+  entryrootdir = "./src",
+  exitrootdir = "./dst",
   development = false
 } = options
 
-await new Glace(entrypoints, directory, development).bundle()
+await new Glace(entryrootdir, exitrootdir, development).bundle()
 
 process.exit(0)

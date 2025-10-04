@@ -13,25 +13,16 @@ export function App() {
     log("Test");
   }, [])
 
-  return <div className="text-red-400">
-    Test
+  return <div className="text-red-400 font-extrabold">
+    This should be a red bold text
   </div>
 }
 
 if (typeof process === "undefined" || process.env.NODE_ENV === "production") {
   await new Rewind(document).hydrate()
 
-  // bliss emoji
-  console.log("\u{1F60C}")
-
   hydrateRoot(document.body, <App />);
 } else {
-  for (const link of document.querySelectorAll("link")) {
-    console.log(link.href);
-  }
-
-  await new Rewind(document).prerender()
-
   const prerender = async (node: ReactNode) => {
     const { default: { prerender } } = await import("react-dom/static")
 
@@ -51,4 +42,6 @@ if (typeof process === "undefined" || process.env.NODE_ENV === "production") {
   }
 
   document.body.innerHTML = await prerender(<App />)
+
+  await new Rewind(document).prerender()
 }

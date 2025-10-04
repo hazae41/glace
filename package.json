@@ -37,7 +37,7 @@
   ],
   "dependencies": {
     "@hazae41/mutex": "^2.2.2",
-    "@hazae41/rewind": "^1.0.27",
+    "@hazae41/rewind": "^1.0.28",
     "esbuild": "^0.25.10",
     "happy-dom": "^19.0.2",
     "react": "^19.1.1",

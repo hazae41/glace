@@ -1,4 +1,3 @@
-import { ancestor } from "@/libs/ancestor/mod.ts";
 import { bundle } from "@/libs/bundle/mod.ts";
 import { Mutex } from "@hazae41/mutex";
 import { HTMLLinkElement, HTMLStyleElement, Window, type HTMLScriptElement } from "happy-dom";
@@ -7,6 +6,7 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { setImmediate } from "node:timers/promises";
 import { redot } from "../../libs/redot/mod.ts";
+import { walkSync } from "../../libs/walk/mod.ts";
 
 const mutex = new Mutex(undefined)
 
@@ -70,36 +70,30 @@ export class Bundler {
 
 export class Glace {
 
-  readonly exittempdir: string
-
   readonly client: Bundler
   readonly server: Bundler
 
   constructor(
-    readonly entrypoints: readonly string[],
+    readonly entryrootdir: string,
     readonly exitrootdir: string,
     readonly development: boolean
   ) {
-    this.exittempdir = path.join(this.exitrootdir, "./tmp")
-
     this.client = new Bundler(this.exitrootdir, this.development)
-    this.server = new Bundler(this.exittempdir, true)
+    this.server = new Bundler(this.exitrootdir, true)
 
     return
   }
 
   async bundle() {
-    const entryrootdir = ancestor(this.entrypoints)
-
-    mkdirSync(path.join(this.exitrootdir, "./tmp"), { recursive: true })
-
-    const bundle = async (entrypoint: string) => {
-      const exitpoint = path.join(this.exitrootdir, path.relative(entryrootdir, entrypoint))
+    const bundleAsHtml = async (entrypoint: string) => {
+      const exitpoint = path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))
 
       mkdirSync(path.dirname(exitpoint), { recursive: true })
 
-      const window = new Window({ url: "file://" + path.resolve(entrypoint) });
-      const document = new window.DOMParser().parseFromString(readFileSync(entrypoint, "utf8"), "text/html")
+      writeFileSync(exitpoint, readFileSync(entrypoint))
+
+      const entrywindow = new Window({ url: "file://" + path.resolve(entrypoint) });
+      const entrydocument = new entrywindow.DOMParser().parseFromString(readFileSync(entrypoint, "utf8"), "text/html")
 
       const bundleAsScript = async (script: HTMLScriptElement) => {
         const modes = script.dataset.bundle.split(",").map(s => s.trim().toLowerCase())
@@ -115,7 +109,7 @@ export class Glace {
           using stack = new DisposableStack()
 
           const nonce = crypto.randomUUID().slice(0, 8)
-          const input = path.join(path.dirname(entrypoint), `./${nonce}.js`)
+          const input = path.join(path.dirname(exitpoint), `./${nonce}.js`)
 
           writeFileSync(input, `export * from "${path.resolve(url.pathname)}";`)
 
@@ -123,8 +117,12 @@ export class Glace {
 
           if (modes.includes("client")) {
             script.src = `/${path.relative(this.exitrootdir, await this.client.include(input))}`
+
+            writeFileSync(exitpoint, `<!DOCTYPE html>\n${entrydocument.documentElement.outerHTML}`)
           } else {
             script.remove()
+
+            writeFileSync(exitpoint, `<!DOCTYPE html>\n${entrydocument.documentElement.outerHTML}`)
           }
 
           if (modes.includes("static")) {
@@ -132,17 +130,20 @@ export class Glace {
 
             using _ = await mutex.lockOrWait()
 
-            // deno-lint-ignore ban-ts-comment
-            // @ts-ignore
-            globalThis.window = window
+            const exitwindow = new Window({ url: "file://" + path.resolve(exitpoint) });
+            const exitdocument = new exitwindow.DOMParser().parseFromString(readFileSync(exitpoint, "utf8"), "text/html")
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            globalThis.document = document
+            globalThis.window = exitwindow
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            globalThis.location = window.location
+            globalThis.document = exitdocument
+
+            // deno-lint-ignore ban-ts-comment
+            // @ts-ignore
+            globalThis.location = exitwindow.location
 
             await import(path.resolve(output))
 
@@ -157,6 +158,8 @@ export class Glace {
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
             delete globalThis.location
+
+            writeFileSync(exitpoint, `<!DOCTYPE html>\n${exitdocument.documentElement.outerHTML}`)
           }
 
           return
@@ -164,11 +167,11 @@ export class Glace {
           using stack = new DisposableStack()
 
           const nonce = crypto.randomUUID().slice(0, 8)
-          const input = path.join(path.dirname(entrypoint), `./${nonce}.js`)
-
-          writeFileSync(input, script.textContent)
+          const input = path.join(path.dirname(exitpoint), `./${nonce}.js`)
 
           stack.defer(() => rmSync(input, { force: true }))
+
+          writeFileSync(input, script.textContent)
 
           if (modes.includes("client")) {
             const output = await this.client.include(input)
@@ -176,8 +179,12 @@ export class Glace {
             stack.defer(() => rmSync(output, { force: true }))
 
             script.textContent = `\n    ${readFileSync(output, "utf8").trim()}\n  `
+
+            writeFileSync(exitpoint, `<!DOCTYPE html>\n${entrydocument.documentElement.outerHTML}`)
           } else {
             script.remove()
+
+            writeFileSync(exitpoint, `<!DOCTYPE html>\n${entrydocument.documentElement.outerHTML}`)
           }
 
           if (modes.includes("static")) {
@@ -185,17 +192,20 @@ export class Glace {
 
             using _ = await mutex.lockOrWait()
 
-            // deno-lint-ignore ban-ts-comment
-            // @ts-ignore
-            globalThis.window = window
+            const exitwindow = new Window({ url: "file://" + path.resolve(exitpoint) });
+            const exitdocument = new exitwindow.DOMParser().parseFromString(readFileSync(exitpoint, "utf8"), "text/html")
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            globalThis.document = document
+            globalThis.window = exitwindow
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            globalThis.location = window.location
+            globalThis.document = exitdocument
+
+            // deno-lint-ignore ban-ts-comment
+            // @ts-ignore
+            globalThis.location = exitwindow.location
 
             await import(path.resolve(server))
 
@@ -210,6 +220,8 @@ export class Glace {
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
             delete globalThis.location
+
+            writeFileSync(exitpoint, `<!DOCTYPE html>\n${exitdocument.documentElement.outerHTML}`)
           }
 
           return
@@ -229,15 +241,17 @@ export class Glace {
         using stack = new DisposableStack()
 
         const nonce = crypto.randomUUID().slice(0, 8)
-        const input = path.join(path.dirname(entrypoint), `./${nonce}.css`)
-
-        writeFileSync(input, `@import "${path.resolve(url.pathname)}";`)
+        const input = path.join(path.dirname(exitpoint), `./${nonce}.css`)
 
         stack.defer(() => rmSync(input, { force: true }))
+
+        writeFileSync(input, `@import "${path.resolve(url.pathname)}";`)
 
         const output = await this.client.include(input)
 
         link.href = redot(path.relative(path.dirname(exitpoint), output))
+
+        writeFileSync(exitpoint, `<!DOCTYPE html>\n${entrydocument.documentElement.outerHTML}`)
       }
 
       const bundleAsStyle = async (style: HTMLStyleElement) => {
@@ -246,33 +260,43 @@ export class Glace {
 
       const promises = new Array<Promise<void>>()
 
-      for (const link of document.querySelectorAll("link[rel=stylesheet][data-bundle]"))
+      for (const link of entrydocument.querySelectorAll("link[rel=stylesheet][data-bundle]"))
         promises.push(bundleAsStylesheetLink(link as unknown as HTMLLinkElement))
-      for (const style of document.querySelectorAll("style[data-bundle]"))
+      for (const style of entrydocument.querySelectorAll("style[data-bundle]"))
         promises.push(bundleAsStyle(style as unknown as HTMLStyleElement))
-      for (const script of document.querySelectorAll("script[data-bundle]"))
+      for (const script of entrydocument.querySelectorAll("script[data-bundle]"))
         promises.push(bundleAsScript(script as unknown as HTMLScriptElement))
 
       await Promise.all(promises)
-
-      writeFileSync(exitpoint, `<!DOCTYPE html>\n${document.documentElement.outerHTML}`)
     }
 
     const promises = new Array<Promise<void>>()
 
-    for (const entrypoint of this.entrypoints)
-      promises.push(bundle(entrypoint))
+    for (const entrypoint of walkSync(this.entryrootdir)) {
+      if (entrypoint.endsWith(".html")) {
+        promises.push(bundleAsHtml(entrypoint))
+        continue
+      }
+
+      // const exitpoint = path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))
+
+      // mkdirSync(path.dirname(exitpoint), { recursive: true })
+
+      // writeFileSync(exitpoint, readFileSync(entrypoint))
+    }
+
+    console.log(this.client.inputs)
 
     await this.client.collect()
 
     // TODO: wait for Deno.bundle to be fixed
     await new Promise(ok => setImmediate(ok))
 
+    console.log(this.server.inputs)
+
     await this.server.collect()
 
     await Promise.all(promises)
-
-    rmSync(this.exittempdir, { recursive: true, force: true })
   }
 
 }
