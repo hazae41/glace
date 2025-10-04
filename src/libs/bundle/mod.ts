@@ -70,6 +70,8 @@ export async function* bundle(inputs: string[], target: string, development: boo
     if (result.outputFiles == null)
       throw new Error("No output files")
 
+    console.log(inputs.length, result.outputFiles.length)
+
     for (const file of result.outputFiles)
       yield { path: file.path, text: file.text(), hash: file.hash }
 
