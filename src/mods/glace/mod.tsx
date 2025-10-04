@@ -7,16 +7,18 @@ import crypto from "node:crypto";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { ancestor } from "../../libs/ancestor/mod.ts";
 
 const global = new Mutex(globalThis)
 
 export class Bundler {
 
-  readonly inputs = new Array<string>()
+  readonly inputs = new Map<string, string>()
 
-  readonly result = Promise.withResolvers<Map<string, string>>()
+  readonly outputs = Promise.withResolvers<Map<string, string>>()
 
   constructor(
+    readonly entryrootdir: string,
     readonly exitrootdir: string,
     readonly development: boolean
   ) { }
@@ -24,11 +26,14 @@ export class Bundler {
   async include(input: string) {
     const name = path.basename(input, path.extname(input))
 
-    this.inputs.push(input)
+    const rawname = name + ([".js", ".jsx", ".ts", ".tsx"].includes(path.extname(input)) ? ".js" : path.extname(input))
+    const tracker = path.relative(this.entryrootdir, path.join(path.dirname(input), `./${rawname}`))
 
-    const result = await this.result.promise
+    this.inputs.set(tracker, input)
 
-    const output = result.get(name)
+    const result = await this.outputs.promise
+
+    const output = result.get(tracker)
 
     if (output == null)
       throw new Error("Output not found")
@@ -38,23 +43,37 @@ export class Bundler {
 
   async collect() {
     const renames = new Map<string, string>()
-    const repaths = new Map<string, string>()
+    const outputs = new Map<string, string>()
 
-    for await (const output of bundle(this.inputs, this.exitrootdir, this.development)) {
+    const entrycommondir = ancestor([...this.inputs.values()])
+    const exitcommondir = path.join(this.exitrootdir, path.relative(this.entryrootdir, entrycommondir))
+
+    for await (const output of bundle([...this.inputs.values()], exitcommondir, this.development)) {
       mkdirSync(path.dirname(output.path), { recursive: true })
 
       const name = path.basename(output.path, path.extname(output.path))
 
-      const rename = crypto.createHash("sha256").update(output.text).digest("hex").slice(0, 8)
-      const repath = path.join(path.dirname(output.path), `./${rename}` + path.extname(output.path))
+      const rawname = name + ([".js", ".jsx", ".ts", ".tsx"].includes(path.extname(output.path)) ? ".js" : path.extname(output.path))
+      const tracker = path.relative(this.exitrootdir, path.join(path.dirname(output.path), `./${rawname}`))
 
-      writeFileSync(repath, output.text)
+      if (this.inputs.get(tracker) == null) {
+        const rename = crypto.createHash("sha256").update(output.text).digest("hex").slice(0, 8)
+        const repath = path.join(path.dirname(output.path), `./${rename}` + path.extname(output.path))
 
-      renames.set(name, rename)
-      repaths.set(name, repath)
+        writeFileSync(repath, output.text)
+
+        renames.set(name, rename)
+        outputs.set(tracker, repath)
+
+        continue
+      }
+
+      writeFileSync(output.path, output.text)
+
+      outputs.set(tracker, output.path)
     }
 
-    for (const repath of repaths.values()) {
+    for (const repath of outputs.values()) {
       let text = readFileSync(repath, "utf8")
 
       for (const [name, rename] of renames.entries())
@@ -63,7 +82,7 @@ export class Bundler {
       writeFileSync(repath, text)
     }
 
-    this.result.resolve(repaths)
+    this.outputs.resolve(outputs)
   }
 
 }
@@ -78,8 +97,8 @@ export class Glace {
     readonly exitrootdir: string,
     readonly development: boolean
   ) {
-    this.client = new Bundler(this.exitrootdir, this.development)
-    this.server = new Bundler(tmpdir(), true)
+    this.client = new Bundler(tmpdir(), this.exitrootdir, this.development)
+    this.server = new Bundler(tmpdir(), tmpdir(), true)
 
     return
   }
@@ -107,11 +126,12 @@ export class Glace {
 
           if (url.protocol !== "file:")
             throw new Error("Unsupported protocol")
+          if (path.relative(this.entryrootdir, url.pathname).startsWith(".."))
+            throw new Error("Out of bound")
 
           ignored.add(url.pathname)
 
-          const nonce = crypto.randomUUID().slice(0, 8)
-          const input = path.join(tmpdir(), path.relative(this.entryrootdir, path.dirname(entrypoint)), `./${nonce}.js`)
+          const input = path.join(tmpdir(), path.relative(this.entryrootdir, url.pathname))
 
           mkdirSync(path.dirname(input), { recursive: true })
 
@@ -159,8 +179,7 @@ export class Glace {
 
           return
         } else {
-          const nonce = crypto.randomUUID().slice(0, 8)
-          const input = path.join(tmpdir(), path.relative(this.entryrootdir, path.dirname(entrypoint)), `./${nonce}.js`)
+          const input = path.join(tmpdir(), path.relative(this.entryrootdir, path.dirname(entrypoint)), `./${crypto.randomUUID().slice(0, 8)}.js`)
 
           mkdirSync(path.dirname(input), { recursive: true })
 
@@ -224,10 +243,14 @@ export class Glace {
 
         const url = new URL(link.href)
 
+        if (url.protocol !== "file:")
+          throw new Error("Unsupported protocol")
+        if (path.relative(this.entryrootdir, url.pathname).startsWith(".."))
+          throw new Error("Out of bound")
+
         ignored.add(url.pathname)
 
-        const nonce = crypto.randomUUID().slice(0, 8)
-        const input = path.join(tmpdir(), path.relative(this.entryrootdir, path.dirname(entrypoint)), `./${nonce}.css`)
+        const input = path.join(tmpdir(), path.relative(this.entryrootdir, url.pathname))
 
         mkdirSync(path.dirname(input), { recursive: true })
 
@@ -254,12 +277,30 @@ export class Glace {
       writeFileSync(exitpoint, `<!DOCTYPE html>\n${document.documentElement.outerHTML}`)
     }
 
+    const bundleAsScript = async (entrypoint: string) => {
+      ignored.add(entrypoint)
+
+      const input = path.join(tmpdir(), path.relative(this.entryrootdir, entrypoint))
+
+      mkdirSync(path.dirname(input), { recursive: true })
+
+      writeFileSync(input, `export * from "${path.resolve(entrypoint)}";`)
+
+      await this.client.include(input)
+    }
+
     const promises = new Array<Promise<void>>()
 
     for (const entrypoint of walkSync(this.entryrootdir)) {
-      if (!entrypoint.endsWith(".html"))
+      if (entrypoint.endsWith(".html")) {
+        promises.push(bundleAsHtml(entrypoint))
         continue
-      promises.push(bundleAsHtml(entrypoint))
+      }
+
+      if ([".js", ".jsx", ".ts", ".tsx"].some(x => entrypoint.endsWith(x))) {
+        promises.push(bundleAsScript(entrypoint))
+        continue
+      }
     }
 
     for (const entrypoint of walkSync(this.entryrootdir)) {
