@@ -1,15 +1,14 @@
 import { bundle } from "@/libs/bundle/mod.ts";
+import { redot } from "@/libs/redot/mod.ts";
+import { walkSync } from "@/libs/walk/mod.ts";
 import { Mutex } from "@hazae41/mutex";
-import { HTMLLinkElement, HTMLStyleElement, Window, type HTMLScriptElement } from "happy-dom";
+import { Window, type HTMLLinkElement, type HTMLScriptElement, type HTMLStyleElement } from "happy-dom";
 import crypto from "node:crypto";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { setImmediate } from "node:timers/promises";
-import { redot } from "../../libs/redot/mod.ts";
-import { walkSync } from "../../libs/walk/mod.ts";
 
-const mutex = new Mutex(undefined)
+const global = new Mutex(globalThis)
 
 export class Bundler {
 
@@ -127,35 +126,35 @@ export class Glace {
           if (modes.includes("static")) {
             const output = await this.server.include(input)
 
-            using _ = await mutex.lockOrWait()
-
             window.location.href = `file://${path.resolve(exitpoint)}`
 
-            // deno-lint-ignore ban-ts-comment
-            // @ts-ignore
-            globalThis.window = window
+            using lock = await global.lockOrWait()
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            globalThis.document = document
+            lock.value.window = window
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            globalThis.location = window.location
+            lock.value.document = document
+
+            // deno-lint-ignore ban-ts-comment
+            // @ts-ignore
+            lock.value.location = window.location
 
             await import(path.resolve(output))
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            delete globalThis.window
+            delete lock.value.window
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            delete globalThis.document
+            delete lock.value.document
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            delete globalThis.location
+            delete lock.value.location
           }
 
           return
@@ -180,35 +179,35 @@ export class Glace {
           if (modes.includes("static")) {
             const output = await this.server.include(input)
 
-            using _ = await mutex.lockOrWait()
-
             window.location.href = `file://${path.resolve(exitpoint)}`
 
-            // deno-lint-ignore ban-ts-comment
-            // @ts-ignore
-            globalThis.window = window
+            using lock = await global.lockOrWait()
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            globalThis.document = window
+            lock.value.window = window
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            globalThis.location = window.location
+            lock.value.document = document
+
+            // deno-lint-ignore ban-ts-comment
+            // @ts-ignore
+            lock.value.location = window.location
 
             await import(path.resolve(output))
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            delete globalThis.window
+            delete lock.value.window
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            delete globalThis.document
+            delete lock.value.document
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            delete globalThis.location
+            delete lock.value.location
           }
 
           return
@@ -276,8 +275,7 @@ export class Glace {
 
     await this.client.collect()
 
-    // TODO: wait for Deno.bundle to be fixed
-    await new Promise(ok => setImmediate(ok))
+    await Promise.resolve()
 
     await this.server.collect()
 
