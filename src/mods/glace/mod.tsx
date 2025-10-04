@@ -86,6 +86,8 @@ export class Glace {
   }
 
   async bundle() {
+    const ignored = new Set<string>()
+
     const bundleAsHtml = async (entrypoint: string) => {
       const exitpoint = path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))
 
@@ -106,6 +108,8 @@ export class Glace {
 
           if (url.protocol !== "file:")
             throw new Error("Unsupported protocol")
+
+          ignored.add(url.pathname)
 
           const nonce = crypto.randomUUID().slice(0, 8)
           const input = path.join(tmpdir(), path.relative(this.entryrootdir, path.dirname(entrypoint)), `./${nonce}.js`)
@@ -221,6 +225,8 @@ export class Glace {
 
         const url = new URL(link.href)
 
+        ignored.add(url.pathname)
+
         const nonce = crypto.randomUUID().slice(0, 8)
         const input = path.join(tmpdir(), path.relative(this.entryrootdir, path.dirname(entrypoint)), `./${nonce}.css`)
 
@@ -252,16 +258,20 @@ export class Glace {
     const promises = new Array<Promise<void>>()
 
     for (const entrypoint of walkSync(this.entryrootdir)) {
-      if (entrypoint.endsWith(".html")) {
-        promises.push(bundleAsHtml(entrypoint))
+      if (!entrypoint.endsWith(".html"))
         continue
-      }
+      promises.push(bundleAsHtml(entrypoint))
+    }
 
-      // const exitpoint = path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))
+    for (const entrypoint of walkSync(this.entryrootdir)) {
+      if (ignored.has(path.resolve(entrypoint)))
+        continue
 
-      // mkdirSync(path.dirname(exitpoint), { recursive: true })
+      const exitpoint = path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))
 
-      // writeFileSync(exitpoint, readFileSync(entrypoint))
+      mkdirSync(path.dirname(exitpoint), { recursive: true })
+
+      writeFileSync(exitpoint, readFileSync(entrypoint))
     }
 
     await this.client.collect()
