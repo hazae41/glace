@@ -3,9 +3,9 @@ import { Mutex } from "@hazae41/mutex";
 import { HTMLLinkElement, HTMLStyleElement, Window, type HTMLScriptElement } from "happy-dom";
 import crypto from "node:crypto";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { setImmediate } from "node:timers/promises";
-import { redot } from "../../libs/redot/mod.ts";
 import { walkSync } from "../../libs/walk/mod.ts";
 
 const mutex = new Mutex(undefined)
@@ -64,6 +64,8 @@ export class Bundler {
     }
 
     this.result.resolve(repaths)
+
+    return repaths.values()
   }
 
 }
@@ -85,6 +87,10 @@ export class Glace {
   }
 
   async bundle() {
+    const tempinputsdir = path.join(tmpdir(), "./inputs")
+
+    mkdirSync(tempinputsdir, { recursive: true })
+
     const bundleAsHtml = async (entrypoint: string) => {
       const exitpoint = path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))
 
@@ -109,7 +115,9 @@ export class Glace {
           using stack = new DisposableStack()
 
           const nonce = crypto.randomUUID().slice(0, 8)
-          const input = path.join(path.dirname(exitpoint), `./${nonce}.js`)
+          const input = path.join(tempinputsdir, path.relative(this.entryrootdir, path.dirname(entrypoint)), `./${nonce}.js`)
+
+          mkdirSync(path.dirname(input), { recursive: true })
 
           writeFileSync(input, `export * from "${path.resolve(url.pathname)}";`)
 
@@ -160,11 +168,13 @@ export class Glace {
           using stack = new DisposableStack()
 
           const nonce = crypto.randomUUID().slice(0, 8)
-          const input = path.join(path.dirname(exitpoint), `./${nonce}.js`)
+          const input = path.join(tempinputsdir, path.relative(this.entryrootdir, path.dirname(entrypoint)), `./${nonce}.js`)
 
-          stack.defer(() => rmSync(input, { force: true }))
+          mkdirSync(path.dirname(input), { recursive: true })
 
           writeFileSync(input, script.textContent)
+
+          stack.defer(() => rmSync(input, { force: true }))
 
           if (modes.includes("client")) {
             const output = await this.client.include(input)
@@ -227,15 +237,15 @@ export class Glace {
         using stack = new DisposableStack()
 
         const nonce = crypto.randomUUID().slice(0, 8)
-        const input = path.join(path.dirname(exitpoint), `./${nonce}.css`)
+        const input = path.join(tempinputsdir, path.relative(this.entryrootdir, path.dirname(entrypoint)), `./${nonce}.css`)
 
-        stack.defer(() => rmSync(input, { force: true }))
+        mkdirSync(path.dirname(input), { recursive: true })
 
         writeFileSync(input, `@import "${path.resolve(url.pathname)}";`)
 
-        const output = await this.client.include(input)
+        stack.defer(() => rmSync(input, { force: true }))
 
-        link.href = redot(path.relative(path.dirname(exitpoint), output))
+        link.href = `/${path.relative(this.exitrootdir, await this.client.include(input))}`
       }
 
       const bundleAsStyle = async (style: HTMLStyleElement) => {
@@ -271,18 +281,19 @@ export class Glace {
       // writeFileSync(exitpoint, readFileSync(entrypoint))
     }
 
-    console.log(this.client.inputs)
-
     await this.client.collect()
 
     // TODO: wait for Deno.bundle to be fixed
     await new Promise(ok => setImmediate(ok))
 
-    console.log(this.server.inputs)
-
-    await this.server.collect()
+    const servers = await this.server.collect()
 
     await Promise.all(promises)
+
+    for (const output of servers)
+      rmSync(output, { force: true })
+
+    return
   }
 
 }
