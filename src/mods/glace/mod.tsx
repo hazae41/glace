@@ -278,7 +278,7 @@ export class Glace {
     }
 
     const bundleAsScript = async (entrypoint: string) => {
-      ignored.add(entrypoint)
+      ignored.add(path.resolve(entrypoint))
 
       const input = path.join(tmpdir(), path.relative(this.entryrootdir, entrypoint))
 
