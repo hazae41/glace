@@ -6,6 +6,7 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { setImmediate } from "node:timers/promises";
+import { redot } from "../../libs/redot/mod.ts";
 import { walkSync } from "../../libs/walk/mod.ts";
 
 const mutex = new Mutex(undefined)
@@ -124,7 +125,7 @@ export class Glace {
           stack.defer(() => rmSync(input, { force: true }))
 
           if (modes.includes("client")) {
-            script.src = `/${path.relative(this.exitrootdir, await this.client.include(input))}`
+            script.src = redot(path.relative(path.dirname(exitpoint), await this.client.include(input)))
           } else {
             script.remove()
           }
@@ -245,7 +246,7 @@ export class Glace {
 
         stack.defer(() => rmSync(input, { force: true }))
 
-        link.href = `/${path.relative(this.exitrootdir, await this.client.include(input))}`
+        link.href = redot(path.relative(path.dirname(exitpoint), await this.client.include(input)))
       }
 
       const bundleAsStyle = async (style: HTMLStyleElement) => {
