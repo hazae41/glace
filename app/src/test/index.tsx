@@ -2,18 +2,26 @@
 /// <reference lib="dom" />
 
 import { Rewind } from "@hazae41/rewind";
-import React, { type ReactNode, useEffect } from "react";
+import React, { type ReactNode, useEffect, useState } from "react";
 import { hydrateRoot } from "react-dom/client";
 import { log } from "../libs/test/lol/mod.ts";
 
 React;
 
 export function App() {
+  const [clicked, setClicked] = useState(false);
+
   useEffect(() => {
     log("Test");
   }, [])
 
-  return <div className="text-red-400 font-extrabold">
+  if (clicked) {
+    return <div className="text-green-400 font-extrabold" onClick={() => setClicked(false)}>
+      This should be a green bold text
+    </div>
+  }
+
+  return <div className="text-red-400 font-extrabold" onClick={() => setClicked(true)}>
     This should be a red bold text
   </div>
 }

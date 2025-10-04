@@ -92,8 +92,8 @@ export class Glace {
 
       writeFileSync(exitpoint, readFileSync(entrypoint))
 
-      const entrywindow = new Window({ url: "file://" + path.resolve(entrypoint) });
-      const entrydocument = new entrywindow.DOMParser().parseFromString(readFileSync(entrypoint, "utf8"), "text/html")
+      const window = new Window({ url: "file://" + path.resolve(entrypoint) });
+      const document = new window.DOMParser().parseFromString(readFileSync(entrypoint, "utf8"), "text/html")
 
       const bundleAsScript = async (script: HTMLScriptElement) => {
         const modes = script.dataset.bundle.split(",").map(s => s.trim().toLowerCase())
@@ -117,12 +117,8 @@ export class Glace {
 
           if (modes.includes("client")) {
             script.src = `/${path.relative(this.exitrootdir, await this.client.include(input))}`
-
-            writeFileSync(exitpoint, `<!DOCTYPE html>\n${entrydocument.documentElement.outerHTML}`)
           } else {
             script.remove()
-
-            writeFileSync(exitpoint, `<!DOCTYPE html>\n${entrydocument.documentElement.outerHTML}`)
           }
 
           if (modes.includes("static")) {
@@ -130,20 +126,19 @@ export class Glace {
 
             using _ = await mutex.lockOrWait()
 
-            const exitwindow = new Window({ url: "file://" + path.resolve(exitpoint) });
-            const exitdocument = new exitwindow.DOMParser().parseFromString(readFileSync(exitpoint, "utf8"), "text/html")
+            window.location.href = `file://${path.resolve(exitpoint)}`
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            globalThis.window = exitwindow
+            globalThis.window = window
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            globalThis.document = exitdocument
+            globalThis.document = document
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            globalThis.location = exitwindow.location
+            globalThis.location = window.location
 
             await import(path.resolve(output))
 
@@ -158,8 +153,6 @@ export class Glace {
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
             delete globalThis.location
-
-            writeFileSync(exitpoint, `<!DOCTYPE html>\n${exitdocument.documentElement.outerHTML}`)
           }
 
           return
@@ -179,12 +172,8 @@ export class Glace {
             stack.defer(() => rmSync(output, { force: true }))
 
             script.textContent = `\n    ${readFileSync(output, "utf8").trim()}\n  `
-
-            writeFileSync(exitpoint, `<!DOCTYPE html>\n${entrydocument.documentElement.outerHTML}`)
           } else {
             script.remove()
-
-            writeFileSync(exitpoint, `<!DOCTYPE html>\n${entrydocument.documentElement.outerHTML}`)
           }
 
           if (modes.includes("static")) {
@@ -192,20 +181,19 @@ export class Glace {
 
             using _ = await mutex.lockOrWait()
 
-            const exitwindow = new Window({ url: "file://" + path.resolve(exitpoint) });
-            const exitdocument = new exitwindow.DOMParser().parseFromString(readFileSync(exitpoint, "utf8"), "text/html")
+            window.location.href = `file://${path.resolve(exitpoint)}`
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            globalThis.window = exitwindow
+            globalThis.window = window
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            globalThis.document = exitdocument
+            globalThis.document = window
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            globalThis.location = exitwindow.location
+            globalThis.location = window.location
 
             await import(path.resolve(server))
 
@@ -220,8 +208,6 @@ export class Glace {
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
             delete globalThis.location
-
-            writeFileSync(exitpoint, `<!DOCTYPE html>\n${exitdocument.documentElement.outerHTML}`)
           }
 
           return
@@ -250,8 +236,6 @@ export class Glace {
         const output = await this.client.include(input)
 
         link.href = redot(path.relative(path.dirname(exitpoint), output))
-
-        writeFileSync(exitpoint, `<!DOCTYPE html>\n${entrydocument.documentElement.outerHTML}`)
       }
 
       const bundleAsStyle = async (style: HTMLStyleElement) => {
@@ -260,14 +244,16 @@ export class Glace {
 
       const promises = new Array<Promise<void>>()
 
-      for (const link of entrydocument.querySelectorAll("link[rel=stylesheet][data-bundle]"))
+      for (const link of document.querySelectorAll("link[rel=stylesheet][data-bundle]"))
         promises.push(bundleAsStylesheetLink(link as unknown as HTMLLinkElement))
-      for (const style of entrydocument.querySelectorAll("style[data-bundle]"))
+      for (const style of document.querySelectorAll("style[data-bundle]"))
         promises.push(bundleAsStyle(style as unknown as HTMLStyleElement))
-      for (const script of entrydocument.querySelectorAll("script[data-bundle]"))
+      for (const script of document.querySelectorAll("script[data-bundle]"))
         promises.push(bundleAsScript(script as unknown as HTMLScriptElement))
 
       await Promise.all(promises)
+
+      writeFileSync(exitpoint, `<!DOCTYPE html>\n${document.documentElement.outerHTML}`)
     }
 
     const promises = new Array<Promise<void>>()
