@@ -79,8 +79,8 @@ export class Glace {
     readonly exitrootdir: string,
     readonly development: boolean
   ) {
-    this.server = new Bundler(tmpdir(), true)
     this.client = new Bundler(this.exitrootdir, this.development)
+    this.server = new Bundler(tmpdir(), true)
 
     return
   }
