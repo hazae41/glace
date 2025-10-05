@@ -22,7 +22,7 @@ export class Bundler {
     readonly entryrootdir: string,
     readonly exitrootdir: string,
     readonly development: boolean,
-    readonly browserside: boolean
+    readonly platform: "browser" | "node"
   ) { }
 
   async include(file: string) {
@@ -45,7 +45,7 @@ export class Bundler {
     const inputs = [...this.inputs]
     const outdir = path.join(this.exitrootdir, path.relative(this.entryrootdir, ancestor(inputs)))
 
-    for await (const output of bundle(inputs, outdir, this.development, this.browserside))
+    for await (const output of bundle(inputs, outdir, this.development, this.platform))
       mkdirAndWriteFileSync(output.path, output.text)
 
     this.result.resolve()
@@ -63,8 +63,8 @@ export class Glace {
     readonly exitrootdir: string,
     readonly development: boolean
   ) {
-    this.client = new Bundler(tmpdir(), this.exitrootdir, this.development, true)
-    this.server = new Bundler(tmpdir(), tmpdir(), true, false)
+    this.client = new Bundler(tmpdir(), this.exitrootdir, this.development, "browser")
+    this.server = new Bundler(tmpdir(), tmpdir(), this.development, "node")
 
     return
   }
