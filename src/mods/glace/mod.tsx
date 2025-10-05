@@ -228,7 +228,7 @@ export class Glace {
 
       }).bind(this)
 
-      const bundles = new Array<AsyncGenerator<undefined, void, unknown>>()
+      const bundles = new Array<AsyncGenerator<void, void, unknown>>()
 
       for (const script of document.querySelectorAll("script[data-bundle]"))
         bundles.push(bundleAsScript(script as unknown as HTMLScriptElement))
@@ -270,7 +270,7 @@ export class Glace {
       this.client.include(input)
     }).bind(this)
 
-    const bundles = new Array<AsyncGenerator<undefined, void, unknown>>()
+    const bundles = new Array<AsyncGenerator<void, void, unknown>>()
 
     for await (const entrypoint of walk(this.entryrootdir)) {
       if (entrypoint.endsWith(".html")) {
