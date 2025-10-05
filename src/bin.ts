@@ -41,8 +41,10 @@ for (let i = 2; i < process.argv.length; i++) {
 const {
   entryrootdir = "./src",
   exitrootdir = "./dst",
-  development = false
+  development = process.env.NODE_ENV === "development"
 } = options
+
+process.env.NODE_ENV = undefined
 
 await new Glace(entryrootdir, exitrootdir, development).bundle()
 

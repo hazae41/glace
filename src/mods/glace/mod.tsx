@@ -10,7 +10,7 @@ import { existsSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-const mglobal = new Mutex(globalThis)
+const mutex = new Mutex(undefined)
 
 export class Bundler {
 
@@ -64,7 +64,7 @@ export class Glace {
     readonly development: boolean
   ) {
     this.client = new Bundler(tmpdir(), this.exitrootdir, this.development, true)
-    this.server = new Bundler(tmpdir(), tmpdir(), this.development, false)
+    this.server = new Bundler(tmpdir(), tmpdir(), true, false)
 
     return
   }
@@ -108,33 +108,33 @@ export class Glace {
 
             window.location.href = `file://${path.resolve(exitpoint)}`
 
-            using lglobal = await mglobal.lockOrWait()
+            using _ = await mutex.lockOrWait()
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            lglobal.value.window = window
+            globalThis.window = window
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            lglobal.value.document = document
+            globalThis.document = document
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            lglobal.value.location = window.location
+            globalThis.location = window.location
 
             await import(path.resolve(output))
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            delete lglobal.value.window
+            delete globalThis.window
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            delete lglobal.value.document
+            delete globalThis.document
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            delete lglobal.value.location
+            delete globalThis.location
           }
 
           return
@@ -158,33 +158,33 @@ export class Glace {
 
             window.location.href = `file://${path.resolve(exitpoint)}`
 
-            using lglobal = await mglobal.lockOrWait()
+            using _ = await mutex.lockOrWait()
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            lglobal.value.window = window
+            globalThis.window = window
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            lglobal.value.document = document
+            globalThis.document = document
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            lglobal.value.location = window.location
+            globalThis.location = window.location
 
             await import(path.resolve(output))
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            delete lglobal.value.window
+            delete globalThis.window
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            delete lglobal.value.document
+            delete globalThis.document
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            delete lglobal.value.location
+            delete globalThis.location
           }
 
           return
