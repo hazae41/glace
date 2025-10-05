@@ -308,8 +308,6 @@ export class Glace {
      * Final stop
      */
     await Promise.all(bundles.map(g => g.next()))
-
-    return
   }
 
 }
