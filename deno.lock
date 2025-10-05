@@ -3,11 +3,11 @@
   "specifiers": {
     "jsr:@hazae41/mutex@3": "3.0.0",
     "jsr:@hazae41/phobos@^2.0.10": "2.0.10",
-    "jsr:@hazae41/rewind@^2.3.0": "2.3.0",
+    "jsr:@hazae41/rewind@^2.3.4": "2.3.4",
     "jsr:@hazae41/tscousin@^1.0.20": "1.0.20",
     "npm:@hazae41/mutex@3": "3.0.0",
     "npm:@hazae41/phobos@^2.0.10": "2.0.10",
-    "npm:@hazae41/rewind@^2.3.0": "2.3.0",
+    "npm:@hazae41/rewind@^2.3.4": "2.3.4",
     "npm:@hazae41/tscousin@^1.0.20": "1.0.20",
     "npm:@types/node@*": "24.2.0",
     "npm:@types/react-dom@^19.2.0": "19.2.0_@types+react@19.2.0",
@@ -26,8 +26,8 @@
     "@hazae41/phobos@2.0.10": {
       "integrity": "02e95522a813f6e058c768ff72890f2008897884cc3cbef1a58b5ec76396c629"
     },
-    "@hazae41/rewind@2.3.0": {
-      "integrity": "6e0a3d5963bcaf81daa22218d79b0d80b6b5c43add744255de3173e6e09a5837",
+    "@hazae41/rewind@2.3.4": {
+      "integrity": "93da3f7a1eaf4801103ddc75160ae179b5043a18678e6253edd10b6e7b4610b4",
       "dependencies": [
         "npm:tailwindcss"
       ]
@@ -173,8 +173,8 @@
     "@hazae41/phobos@2.0.10": {
       "integrity": "sha512-o+TV5xgsDx23j1rLFPZKKOj9nfMCog4FCQiEHw8IdiUjm4fiJiR3XfH2qHBzBLjN/w3RLoohcfkuaoww7WSYjw=="
     },
-    "@hazae41/rewind@2.3.0": {
-      "integrity": "sha512-k6pVYzbgyTshAcpGZGKjUlhCAnQObMGHRiaFywNn4ri++9rRPwp9ViQDjD4q0VvLNfkJjwBsgzUn4a4zQPNpCA==",
+    "@hazae41/rewind@2.3.4": {
+      "integrity": "sha512-JrTczrQp+C2Os4yIy37/gsaNGWhpQVWa19kLlVplTPwleQQXAJZp8sSiRJy5ieUwbKjPDnTMbARtAg3PtDAHNA==",
       "dependencies": [
         "tailwindcss"
       ]
@@ -288,14 +288,14 @@
     "dependencies": [
       "jsr:@hazae41/mutex@3",
       "jsr:@hazae41/phobos@^2.0.10",
-      "jsr:@hazae41/rewind@^2.3.0",
+      "jsr:@hazae41/rewind@^2.3.4",
       "jsr:@hazae41/tscousin@^1.0.20"
     ],
     "packageJson": {
       "dependencies": [
         "npm:@hazae41/mutex@3",
         "npm:@hazae41/phobos@^2.0.10",
-        "npm:@hazae41/rewind@^2.3.0",
+        "npm:@hazae41/rewind@^2.3.4",
         "npm:@hazae41/tscousin@^1.0.20",
         "npm:@types/react-dom@^19.2.0",
         "npm:@types/react@^19.2.0",

@@ -47,7 +47,7 @@ export async function prebundle(input: string, output: string, external: string[
   }
 }
 
-export async function* bundle(inputs: string[], target: string, development: boolean): AsyncGenerator<Output> {
+export async function* bundle(inputs: string[], target: string, development: boolean, browserside: boolean): AsyncGenerator<Output> {
   if ("Deno" in globalThis) {
     const result = await Deno.bundle({
       entrypoints: inputs,
@@ -56,6 +56,7 @@ export async function* bundle(inputs: string[], target: string, development: boo
       codeSplitting: true,
       minify: !development,
       write: false,
+      platform: browserside ? "browser" : "deno",
     })
 
     for (const warning of result.warnings)
@@ -83,6 +84,9 @@ export async function* bundle(inputs: string[], target: string, development: boo
       splitting: true,
       write: false,
       minify: !development,
+      external: ["node:*"],
+      platform: browserside ? "browser" : "node",
+      banner: browserside ? {} : { js: `import { createRequire } from "module"; const require = createRequire(import.meta.url);` }
     })
 
     for (const warning of result.warnings)

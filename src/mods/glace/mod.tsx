@@ -1,14 +1,14 @@
+import { ancestor } from "@/libs/ancestor/mod.ts";
 import { bundle } from "@/libs/bundle/mod.ts";
+import { mkdirAndWriteFileSync } from "@/libs/fs/mod.ts";
 import { redot } from "@/libs/redot/mod.ts";
 import { walkSync } from "@/libs/walk/mod.ts";
 import { Mutex } from "@hazae41/mutex";
 import { Window, type HTMLLinkElement, type HTMLScriptElement, type HTMLStyleElement } from "happy-dom";
 import crypto from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { ancestor } from "../../libs/ancestor/mod.ts";
-import { mkdirAndWriteFileSync } from "../../libs/fs/mod.ts";
 
 const mglobal = new Mutex(globalThis)
 
@@ -21,7 +21,8 @@ export class Bundler {
   constructor(
     readonly entryrootdir: string,
     readonly exitrootdir: string,
-    readonly development: boolean
+    readonly development: boolean,
+    readonly browserside: boolean
   ) { }
 
   async include(file: string) {
@@ -44,7 +45,7 @@ export class Bundler {
     const inputs = [...this.inputs]
     const outdir = path.join(this.exitrootdir, path.relative(this.entryrootdir, ancestor(inputs)))
 
-    for await (const output of bundle(inputs, outdir, this.development))
+    for await (const output of bundle(inputs, outdir, this.development, this.browserside))
       mkdirAndWriteFileSync(output.path, output.text)
 
     this.result.resolve()
@@ -62,8 +63,8 @@ export class Glace {
     readonly exitrootdir: string,
     readonly development: boolean
   ) {
-    this.client = new Bundler(tmpdir(), this.exitrootdir, this.development)
-    this.server = new Bundler(tmpdir(), tmpdir(), true)
+    this.client = new Bundler(tmpdir(), this.exitrootdir, this.development, true)
+    this.server = new Bundler(tmpdir(), tmpdir(), this.development, false)
 
     return
   }
@@ -94,9 +95,7 @@ export class Glace {
 
           const input = path.join(tmpdir(), path.relative(this.entryrootdir, url.pathname))
 
-          mkdirSync(path.dirname(input), { recursive: true })
-
-          writeFileSync(input, `export * from "${path.resolve(url.pathname)}";`)
+          mkdirAndWriteFileSync(input, `export * from "${path.resolve(url.pathname)}";`)
 
           if (modes.includes("client")) {
             script.src = redot(path.relative(path.dirname(exitpoint), await this.client.include(input)))
@@ -142,9 +141,7 @@ export class Glace {
         } else {
           const input = path.join(tmpdir(), path.relative(this.entryrootdir, path.dirname(entrypoint)), `./${crypto.randomUUID().slice(0, 8)}.js`)
 
-          mkdirSync(path.dirname(input), { recursive: true })
-
-          writeFileSync(input, script.textContent)
+          mkdirAndWriteFileSync(input, script.textContent)
 
           if (modes.includes("client")) {
             const output = await this.client.include(input)
