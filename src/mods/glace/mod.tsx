@@ -1,12 +1,12 @@
 import { ancestor } from "@/libs/ancestor/mod.ts";
 import { bundle } from "@/libs/bundle/mod.ts";
-import { mkdirAndWriteFileSync } from "@/libs/fs/mod.ts";
+import { mkdirAndWriteFile } from "@/libs/fs/mod.ts";
 import { redot } from "@/libs/redot/mod.ts";
-import { walkSync } from "@/libs/walk/mod.ts";
+import { walk } from "@/libs/walk/mod.ts";
 import { Mutex } from "@hazae41/mutex";
 import { Window, type HTMLLinkElement, type HTMLScriptElement, type HTMLStyleElement } from "happy-dom";
 import crypto from "node:crypto";
-import { readFileSync, rmSync } from "node:fs";
+import { readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -42,7 +42,7 @@ export class Bundler {
     const outdir = path.join(this.exitrootdir, path.relative(this.entryrootdir, ancestor(inputs)))
 
     for await (const output of bundle(inputs, outdir, this.development, this.platform))
-      mkdirAndWriteFileSync(output.path, output.text)
+      await mkdirAndWriteFile(output.path, output.text)
 
     return
   }
@@ -72,7 +72,7 @@ export class Glace {
       const exitpoint = path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))
 
       const window = new Window({ url: "file://" + path.resolve(entrypoint) });
-      const document = new window.DOMParser().parseFromString(readFileSync(entrypoint, "utf8"), "text/html")
+      const document = new window.DOMParser().parseFromString(await readFile(entrypoint, "utf8"), "text/html")
 
       const bundleAsScript = (async function* (this: Glace, script: HTMLScriptElement) {
         const modes = script.dataset.bundle.split(",").map(s => s.trim().toLowerCase())
@@ -91,7 +91,7 @@ export class Glace {
 
           const input = path.join(tmpdir(), path.relative(this.entryrootdir, url.pathname))
 
-          mkdirAndWriteFileSync(input, `export * from "${path.resolve(url.pathname)}";`)
+          await mkdirAndWriteFile(input, `export * from "${path.resolve(url.pathname)}";`)
 
           if (modes.includes("client")) {
             const output = this.client.include(input)
@@ -145,17 +145,21 @@ export class Glace {
         } else {
           const input = path.join(tmpdir(), path.relative(this.entryrootdir, path.dirname(entrypoint)), `./${crypto.randomUUID().slice(0, 8)}.js`)
 
-          mkdirAndWriteFileSync(input, script.textContent)
+          await mkdirAndWriteFile(input, script.textContent)
 
           if (modes.includes("client")) {
             const output = this.client.include(input)
 
             yield
 
-            script.textContent = `\n    ${readFileSync(output, "utf8").trim()}\n  `
+            script.textContent = `\n    ${await readFile(output, "utf8").then(x => x.trim())}\n  `
 
-            rmSync(output, { force: true })
+            await rm(output, { force: true })
           } else {
+            /**
+             * NOOP
+             */
+
             yield
 
             script.remove()
@@ -215,7 +219,7 @@ export class Glace {
 
         const input = path.join(tmpdir(), path.relative(this.entryrootdir, url.pathname))
 
-        mkdirAndWriteFileSync(input, `@import "${path.resolve(url.pathname)}";`)
+        await mkdirAndWriteFile(input, `@import "${path.resolve(url.pathname)}";`)
 
         const output = this.client.include(input)
 
@@ -237,13 +241,26 @@ export class Glace {
       for (const link of document.querySelectorAll("link[rel=stylesheet][data-bundle]"))
         bundles.push(bundleAsStylesheetLink(link as unknown as HTMLLinkElement))
 
+      /**
+       * First stop
+       */
       await Promise.all(bundles.map(g => g.next()))
 
       yield
 
+      /**
+       * Second stop
+       */
       await Promise.all(bundles.map(g => g.next()))
 
-      mkdirAndWriteFileSync(exitpoint, `<!DOCTYPE html>\n${document.documentElement.outerHTML}`)
+      yield
+
+      /**
+       * Final stop
+       */
+      await Promise.all(bundles.map(g => g.next()))
+
+      await mkdirAndWriteFile(exitpoint, `<!DOCTYPE html>\n${document.documentElement.outerHTML}`)
     }).bind(this)
 
     const bundleAsScript = (async function* (this: Glace, entrypoint: string) {
@@ -251,7 +268,7 @@ export class Glace {
 
       const input = path.join(tmpdir(), path.relative(this.entryrootdir, entrypoint))
 
-      mkdirAndWriteFileSync(input, `export * from "${path.resolve(entrypoint)}";`)
+      await mkdirAndWriteFile(input, `export * from "${path.resolve(entrypoint)}";`)
 
       this.client.include(input)
 
@@ -260,7 +277,7 @@ export class Glace {
 
     const bundles = new Array<AsyncGenerator<undefined, void, unknown>>()
 
-    for (const entrypoint of walkSync(this.entryrootdir)) {
+    for await (const entrypoint of walk(this.entryrootdir)) {
       if (entrypoint.endsWith(".html")) {
         bundles.push(bundleAsHtml(entrypoint))
         continue
@@ -272,23 +289,29 @@ export class Glace {
       }
     }
 
+    /**
+     * First stop
+     */
     await Promise.all(bundles.map(g => g.next()))
 
     await this.client.bundle()
 
-    for (const entrypoint of walkSync(this.entryrootdir)) {
+    for await (const entrypoint of walk(this.entryrootdir)) {
       if (ignored.has(path.resolve(entrypoint)))
         continue
-
-      const exitpoint = path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))
-
-      mkdirAndWriteFileSync(exitpoint, readFileSync(entrypoint))
+      await mkdirAndWriteFile(path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint)), await readFile(entrypoint))
     }
 
+    /**
+     * Second stop
+     */
     await Promise.all(bundles.map(g => g.next()))
 
     await this.server.bundle()
 
+    /**
+     * Final stop
+     */
     await Promise.all(bundles.map(g => g.next()))
 
     return
