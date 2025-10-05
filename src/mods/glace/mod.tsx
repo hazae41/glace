@@ -192,12 +192,7 @@ export class Glace {
       }
 
       const bundleAsStylesheetLink = async (link: HTMLLinkElement) => {
-        const modes = link.dataset.bundle.split(",").map(s => s.trim().toLowerCase())
-
         delete link.dataset.bundle
-
-        if (!modes.includes("client"))
-          return
 
         const url = new URL(link.href)
 
