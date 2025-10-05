@@ -4,18 +4,19 @@ import { walkSync } from "@/libs/walk/mod.ts";
 import { Mutex } from "@hazae41/mutex";
 import { Window, type HTMLLinkElement, type HTMLScriptElement, type HTMLStyleElement } from "happy-dom";
 import crypto from "node:crypto";
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { ancestor } from "../../libs/ancestor/mod.ts";
+import { mkdirAndWriteFileSync } from "../../libs/fs/mod.ts";
 
-const global = new Mutex(globalThis)
+const mglobal = new Mutex(globalThis)
 
 export class Bundler {
 
-  readonly inputs = new Map<string, string>()
+  readonly inputs = new Set<string>()
 
-  readonly outputs = Promise.withResolvers<Map<string, string>>()
+  readonly result = Promise.withResolvers<void>()
 
   constructor(
     readonly entryrootdir: string,
@@ -23,66 +24,30 @@ export class Bundler {
     readonly development: boolean
   ) { }
 
-  async include(input: string) {
-    const name = path.basename(input, path.extname(input))
+  async include(file: string) {
+    const name = path.basename(file, path.extname(file))
 
-    const rawname = name + ([".js", ".jsx", ".ts", ".tsx"].includes(path.extname(input)) ? ".js" : path.extname(input))
-    const tracker = path.relative(this.entryrootdir, path.join(path.dirname(input), `./${rawname}`))
+    const outname = name + ([".js", ".jsx", ".ts", ".tsx"].includes(path.extname(file)) ? ".js" : path.extname(file))
+    const outfile = path.join(this.exitrootdir, path.relative(this.entryrootdir, path.dirname(file)), outname)
 
-    this.inputs.set(tracker, input)
+    this.inputs.add(file)
 
-    const result = await this.outputs.promise
+    await this.result.promise
 
-    const output = result.get(tracker)
-
-    if (output == null)
+    if (!existsSync(outfile))
       throw new Error("Output not found")
 
-    return output
+    return outfile
   }
 
-  async collect() {
-    const renames = new Map<string, string>()
-    const outputs = new Map<string, string>()
+  async bundle() {
+    const inputs = [...this.inputs]
+    const outdir = path.join(this.exitrootdir, path.relative(this.entryrootdir, ancestor(inputs)))
 
-    const entrycommondir = ancestor([...this.inputs.values()])
-    const exitcommondir = path.join(this.exitrootdir, path.relative(this.entryrootdir, entrycommondir))
+    for await (const output of bundle(inputs, outdir, this.development))
+      mkdirAndWriteFileSync(output.path, output.text)
 
-    for await (const output of bundle([...this.inputs.values()], exitcommondir, this.development)) {
-      mkdirSync(path.dirname(output.path), { recursive: true })
-
-      const name = path.basename(output.path, path.extname(output.path))
-
-      const rawname = name + ([".js", ".jsx", ".ts", ".tsx"].includes(path.extname(output.path)) ? ".js" : path.extname(output.path))
-      const tracker = path.relative(this.exitrootdir, path.join(path.dirname(output.path), `./${rawname}`))
-
-      if (this.inputs.get(tracker) == null) {
-        const rename = crypto.createHash("sha256").update(output.text).digest("hex").slice(0, 8)
-        const repath = path.join(path.dirname(output.path), `./${rename}` + path.extname(output.path))
-
-        writeFileSync(repath, output.text)
-
-        renames.set(name, rename)
-        outputs.set(tracker, repath)
-
-        continue
-      }
-
-      writeFileSync(output.path, output.text)
-
-      outputs.set(tracker, output.path)
-    }
-
-    for (const repath of outputs.values()) {
-      let text = readFileSync(repath, "utf8")
-
-      for (const [name, rename] of renames.entries())
-        text = text.replaceAll(name, rename)
-
-      writeFileSync(repath, text)
-    }
-
-    this.outputs.resolve(outputs)
+    this.result.resolve()
   }
 
 }
@@ -108,10 +73,6 @@ export class Glace {
 
     const bundleAsHtml = async (entrypoint: string) => {
       const exitpoint = path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))
-
-      mkdirSync(path.dirname(exitpoint), { recursive: true })
-
-      writeFileSync(exitpoint, readFileSync(entrypoint))
 
       const window = new Window({ url: "file://" + path.resolve(entrypoint) });
       const document = new window.DOMParser().parseFromString(readFileSync(entrypoint, "utf8"), "text/html")
@@ -148,33 +109,33 @@ export class Glace {
 
             window.location.href = `file://${path.resolve(exitpoint)}`
 
-            using lock = await global.lockOrWait()
+            using lglobal = await mglobal.lockOrWait()
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            lock.value.window = window
+            lglobal.value.window = window
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            lock.value.document = document
+            lglobal.value.document = document
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            lock.value.location = window.location
+            lglobal.value.location = window.location
 
             await import(path.resolve(output))
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            delete lock.value.window
+            delete lglobal.value.window
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            delete lock.value.document
+            delete lglobal.value.document
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            delete lock.value.location
+            delete lglobal.value.location
           }
 
           return
@@ -200,33 +161,33 @@ export class Glace {
 
             window.location.href = `file://${path.resolve(exitpoint)}`
 
-            using lock = await global.lockOrWait()
+            using lglobal = await mglobal.lockOrWait()
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            lock.value.window = window
+            lglobal.value.window = window
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            lock.value.document = document
+            lglobal.value.document = document
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            lock.value.location = window.location
+            lglobal.value.location = window.location
 
             await import(path.resolve(output))
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            delete lock.value.window
+            delete lglobal.value.window
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            delete lock.value.document
+            delete lglobal.value.document
 
             // deno-lint-ignore ban-ts-comment
             // @ts-ignore
-            delete lock.value.location
+            delete lglobal.value.location
           }
 
           return
@@ -252,9 +213,7 @@ export class Glace {
 
         const input = path.join(tmpdir(), path.relative(this.entryrootdir, url.pathname))
 
-        mkdirSync(path.dirname(input), { recursive: true })
-
-        writeFileSync(input, `@import "${path.resolve(url.pathname)}";`)
+        mkdirAndWriteFileSync(input, `@import "${path.resolve(url.pathname)}";`)
 
         link.href = redot(path.relative(path.dirname(exitpoint), await this.client.include(input)))
       }
@@ -274,7 +233,7 @@ export class Glace {
 
       await Promise.all(promises)
 
-      writeFileSync(exitpoint, `<!DOCTYPE html>\n${document.documentElement.outerHTML}`)
+      mkdirAndWriteFileSync(exitpoint, `<!DOCTYPE html>\n${document.documentElement.outerHTML}`)
     }
 
     const bundleAsScript = async (entrypoint: string) => {
@@ -282,9 +241,7 @@ export class Glace {
 
       const input = path.join(tmpdir(), path.relative(this.entryrootdir, entrypoint))
 
-      mkdirSync(path.dirname(input), { recursive: true })
-
-      writeFileSync(input, `export * from "${path.resolve(entrypoint)}";`)
+      mkdirAndWriteFileSync(input, `export * from "${path.resolve(entrypoint)}";`)
 
       await this.client.include(input)
     }
@@ -309,16 +266,14 @@ export class Glace {
 
       const exitpoint = path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))
 
-      mkdirSync(path.dirname(exitpoint), { recursive: true })
-
-      writeFileSync(exitpoint, readFileSync(entrypoint))
+      mkdirAndWriteFileSync(exitpoint, readFileSync(entrypoint))
     }
 
-    await this.client.collect()
+    await this.client.bundle()
 
     await Promise.resolve()
 
-    await this.server.collect()
+    await this.server.bundle()
 
     await Promise.all(promises)
 
