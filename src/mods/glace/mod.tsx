@@ -156,10 +156,6 @@ export class Glace {
 
             await rm(output, { force: true })
           } else {
-            /**
-             * NOOP
-             */
-
             yield
 
             script.remove()
@@ -263,6 +259,7 @@ export class Glace {
       await mkdirAndWriteFile(exitpoint, `<!DOCTYPE html>\n${document.documentElement.outerHTML}`)
     }).bind(this)
 
+    // deno-lint-ignore require-yield
     const bundleAsScript = (async function* (this: Glace, entrypoint: string) {
       ignored.add(path.resolve(entrypoint))
 
@@ -271,8 +268,6 @@ export class Glace {
       await mkdirAndWriteFile(input, `export * from "${path.resolve(entrypoint)}";`)
 
       this.client.include(input)
-
-      yield
     }).bind(this)
 
     const bundles = new Array<AsyncGenerator<undefined, void, unknown>>()
