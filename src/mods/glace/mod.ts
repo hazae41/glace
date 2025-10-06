@@ -190,12 +190,12 @@ export class Glace {
 
     const bundles = new Array<AsyncGenerator<void, void, unknown>>()
 
-    const ignores = new Set(await readFile(path.join(this.entryrootdir, "./.glaceignore"), "utf8").then(x => x.split("\n")))
+    const ignores = new Set(await readFile(path.join(this.entryrootdir, "./.bundleignore"), "utf8").then(x => x.split("\n")))
 
     for await (const entrypoint of walk(this.entryrootdir)) {
       const relative = path.relative(this.entryrootdir, entrypoint)
 
-      if (relative === ".glaceignore")
+      if (relative === ".bundleignore")
         continue
 
       if (entrypoint.endsWith(".html")) {
