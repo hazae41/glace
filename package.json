@@ -28,6 +28,7 @@
   "devDependencies": {
     "@hazae41/phobos": "^2.0.10",
     "@hazae41/tscousin": "^1.0.20",
+    "@types/node": "^24.7.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "typescript": "^5.9.3"

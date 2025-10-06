@@ -1,5 +1,5 @@
-import { mkdirSync, writeFileSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 export async function mkdirAndWriteFile(file: string, data: string | NodeJS.ArrayBufferView) {
@@ -12,4 +12,8 @@ export function mkdirAndWriteFileSync(file: string, data: string | NodeJS.ArrayB
   mkdirSync(path.dirname(file), { recursive: true })
 
   writeFileSync(file, data)
+}
+
+export async function readFileAsTextOrEmpty(file: string) {
+  return existsSync(file) ? await readFile(file, "utf8") : ""
 }

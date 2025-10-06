@@ -1,11 +1,10 @@
 import { Bundler } from "@/libs/bundle/mod.ts";
-import { mkdirAndWriteFile } from "@/libs/fs/mod.ts";
+import { mkdirAndWriteFile, readFileAsTextOrEmpty } from "@/libs/fs/mod.ts";
 import { redot } from "@/libs/redot/mod.ts";
-import { walk } from "@/libs/walk/mod.ts";
 import { Mutex } from "@hazae41/mutex";
 import { Window, type HTMLLinkElement, type HTMLScriptElement, type HTMLStyleElement } from "happy-dom";
 import crypto from "node:crypto";
-import { readFile, rm } from "node:fs/promises";
+import { glob, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -29,7 +28,7 @@ export class Glace {
     const bundleAsHtml = (async function* (this: Glace, entrypoint: string) {
       const exitpoint = path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))
 
-      const window = new Window({ url: "file://" + path.resolve(entrypoint) });
+      const window = new Window({ url: "file://" + entrypoint });
       const document = new window.DOMParser().parseFromString(await readFile(entrypoint, "utf8"), "text/html")
 
       const bundleAsScript = (async function* (this: Glace, script: HTMLScriptElement) {
@@ -190,25 +189,28 @@ export class Glace {
 
     const bundles = new Array<AsyncGenerator<void, void, unknown>>()
 
-    const ignores = new Set(await readFile(path.join(this.entryrootdir, "./.bundleignore"), "utf8").then(x => x.split("\n")))
+    const exclude = await readFileAsTextOrEmpty(path.join(this.entryrootdir, "./.bundleignore")).then(x => x.split("\n"))
 
-    for await (const entrypoint of walk(this.entryrootdir)) {
-      const relative = path.relative(this.entryrootdir, entrypoint)
+    for await (const file of glob("**/*", { cwd: this.entryrootdir, exclude })) {
+      const relative = file.toString()
+      const absolute = path.resolve(this.entryrootdir, relative)
 
       if (relative === ".bundleignore")
         continue
 
-      if (entrypoint.endsWith(".html")) {
-        bundles.push(bundleAsHtml(entrypoint))
+      if (relative.endsWith(".html")) {
+        bundles.push(bundleAsHtml(absolute))
         continue
       }
 
-      if (!ignores.has(relative)) {
-        this.client.include(path.resolve(entrypoint))
-        continue
-      }
+      this.client.include(absolute)
+    }
 
-      await mkdirAndWriteFile(path.join(this.exitrootdir, relative), await readFile(entrypoint))
+    for await (const file of glob(exclude, { cwd: this.entryrootdir })) {
+      const relative = file.toString()
+      const absolute = path.resolve(this.entryrootdir, relative)
+
+      await mkdirAndWriteFile(path.join(this.exitrootdir, relative), await readFile(absolute))
     }
 
     await Promise.all(bundles.map(g => g.next()))

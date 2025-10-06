@@ -297,6 +297,7 @@
         "npm:@hazae41/phobos@^2.0.10",
         "npm:@hazae41/rewind@^2.3.4",
         "npm:@hazae41/tscousin@^1.0.20",
+        "npm:@types/node@^24.7.0",
         "npm:@types/react-dom@^19.2.0",
         "npm:@types/react@^19.2.0",
         "npm:esbuild@~0.25.10",
