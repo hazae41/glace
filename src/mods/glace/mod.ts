@@ -1,5 +1,4 @@
-import { ancestor } from "@/libs/ancestor/mod.ts";
-import { bundle } from "@/libs/bundle/mod.ts";
+import { Bundler } from "@/libs/bundle/mod.ts";
 import { mkdirAndWriteFile } from "@/libs/fs/mod.ts";
 import { redot } from "@/libs/redot/mod.ts";
 import { walk } from "@/libs/walk/mod.ts";
@@ -11,43 +10,6 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 const mutex = new Mutex(undefined)
-
-export class Bundler {
-
-  readonly inputs = new Set<string>()
-
-  constructor(
-    readonly entryrootdir: string,
-    readonly exitrootdir: string,
-    readonly platform: "browser" | "node",
-    readonly mode: "production" | "development",
-  ) { }
-
-  include(file: string) {
-    const name = path.basename(file, path.extname(file))
-
-    const outname = name + ([".js", ".jsx", ".ts", ".tsx"].includes(path.extname(file)) ? ".js" : path.extname(file))
-    const outfile = path.join(this.exitrootdir, path.relative(this.entryrootdir, path.dirname(file)), outname)
-
-    this.inputs.add(file)
-
-    return outfile
-  }
-
-  async bundle() {
-    if (this.inputs.size === 0)
-      return
-
-    const inputs = [...this.inputs]
-    const outdir = path.join(this.exitrootdir, path.relative(this.entryrootdir, ancestor(inputs)))
-
-    for await (const output of bundle(inputs, outdir, this.platform, this.mode))
-      await mkdirAndWriteFile(output.path, output.text)
-
-    return
-  }
-
-}
 
 export class Glace {
 
@@ -106,30 +68,24 @@ export class Glace {
 
             using _ = await mutex.lockOrWait()
 
-            // deno-lint-ignore ban-ts-comment
-            // @ts-ignore
+            // @ts-expect-error:
             globalThis.window = window
 
-            // deno-lint-ignore ban-ts-comment
-            // @ts-ignore
+            // @ts-expect-error:
             globalThis.document = document
 
-            // deno-lint-ignore ban-ts-comment
-            // @ts-ignore
+            // @ts-expect-error:
             globalThis.location = window.location
 
             await import(path.resolve(output))
 
-            // deno-lint-ignore ban-ts-comment
-            // @ts-ignore
+            // @ts-expect-error:
             delete globalThis.window
 
-            // deno-lint-ignore ban-ts-comment
-            // @ts-ignore
+            // @ts-expect-error:
             delete globalThis.document
 
-            // deno-lint-ignore ban-ts-comment
-            // @ts-ignore
+            // @ts-expect-error:
             delete globalThis.location
           }
 
@@ -166,30 +122,24 @@ export class Glace {
 
             using _ = await mutex.lockOrWait()
 
-            // deno-lint-ignore ban-ts-comment
-            // @ts-ignore
+            // @ts-expect-error:
             globalThis.window = window
 
-            // deno-lint-ignore ban-ts-comment
-            // @ts-ignore
+            // @ts-expect-error:
             globalThis.document = document
 
-            // deno-lint-ignore ban-ts-comment
-            // @ts-ignore
+            // @ts-expect-error:
             globalThis.location = window.location
 
             await import(path.resolve(output))
 
-            // deno-lint-ignore ban-ts-comment
-            // @ts-ignore
+            // @ts-expect-error:
             delete globalThis.window
 
-            // deno-lint-ignore ban-ts-comment
-            // @ts-ignore
+            // @ts-expect-error:
             delete globalThis.document
 
-            // deno-lint-ignore ban-ts-comment
-            // @ts-ignore
+            // @ts-expect-error:
             delete globalThis.location
           }
 

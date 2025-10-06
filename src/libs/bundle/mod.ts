@@ -1,5 +1,8 @@
+import { ancestor } from "@/libs/ancestor/mod.ts";
+import { mkdirAndWriteFile } from "@/libs/fs/mod.ts";
 import esbuild from "esbuild";
 import { builtinModules } from "node:module";
+import path from "node:path";
 
 export interface Output {
   readonly path: string
@@ -38,4 +41,41 @@ export async function* bundle(inputs: string[], target: string, platform: "brows
     yield { path: file.path, text: file.text, hash: file.hash }
 
   return
+}
+
+export class Bundler {
+
+  readonly inputs = new Set<string>()
+
+  constructor(
+    readonly entryrootdir: string,
+    readonly exitrootdir: string,
+    readonly platform: "browser" | "node",
+    readonly mode: "production" | "development",
+  ) { }
+
+  include(file: string) {
+    const name = path.basename(file, path.extname(file))
+
+    const outname = name + ([".js", ".jsx", ".ts", ".tsx"].includes(path.extname(file)) ? ".js" : path.extname(file))
+    const outfile = path.join(this.exitrootdir, path.relative(this.entryrootdir, path.dirname(file)), outname)
+
+    this.inputs.add(file)
+
+    return outfile
+  }
+
+  async bundle() {
+    if (this.inputs.size === 0)
+      return
+
+    const inputs = [...this.inputs]
+    const outdir = path.join(this.exitrootdir, path.relative(this.entryrootdir, ancestor(inputs)))
+
+    for await (const output of bundle(inputs, outdir, this.platform, this.mode))
+      await mkdirAndWriteFile(output.path, output.text)
+
+    return
+  }
+
 }

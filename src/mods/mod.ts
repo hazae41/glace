@@ -1,2 +1,2 @@
-export * from "./glace/mod.tsx";
+export * from "./glace/mod.ts";
 
