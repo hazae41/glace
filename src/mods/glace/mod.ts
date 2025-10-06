@@ -12,7 +12,7 @@ import path from "node:path";
 export class Glace {
 
   readonly client: Bundler
-  readonly server: Bundler
+  readonly statxc: Bundler
 
   constructor(
     readonly entryrootdir: string,
@@ -20,9 +20,7 @@ export class Glace {
     readonly mode: "production" | "development"
   ) {
     this.client = new Bundler(this.entryrootdir, this.exitrootdir, "browser", this.mode)
-    this.server = new Bundler(this.entryrootdir, tmpdir(), "node", this.mode)
-
-    return
+    this.statxc = new Bundler(this.entryrootdir, tmpdir(), "node", this.mode)
   }
 
   async bundle() {
@@ -60,7 +58,7 @@ export class Glace {
           }
 
           if (modes.includes("static")) {
-            const output = this.server.include(url.pathname)
+            const output = this.statxc.include(url.pathname)
 
             yield
 
@@ -92,7 +90,7 @@ export class Glace {
           }
 
           if (modes.includes("static")) {
-            const output = this.server.include(dummy)
+            const output = this.statxc.include(dummy)
 
             yield
 
@@ -190,22 +188,6 @@ export class Glace {
       return
     }).bind(this)
 
-    const bundleAsScript = (async function* (this: Glace, entrypoint: string) {
-      this.client.include(path.resolve(entrypoint))
-
-      yield
-
-      return
-    }).bind(this)
-
-    const bundleAsStylesheet = (async function* (this: Glace, entrypoint: string) {
-      this.client.include(path.resolve(entrypoint))
-
-      yield
-
-      return
-    }).bind(this)
-
     const bundles = new Array<AsyncGenerator<void, void, unknown>>()
 
     for await (const entrypoint of walk(this.entryrootdir)) {
@@ -214,13 +196,8 @@ export class Glace {
         continue
       }
 
-      if (entrypoint.endsWith(".css")) {
-        bundles.push(bundleAsStylesheet(entrypoint))
-        continue
-      }
-
-      if ([".js", ".jsx", ".ts", ".tsx"].some(x => entrypoint.endsWith(x))) {
-        bundles.push(bundleAsScript(entrypoint))
+      if ([".css", ".js", ".jsx", ".ts", ".tsx"].some(x => entrypoint.endsWith(x))) {
+        this.client.include(path.resolve(entrypoint))
         continue
       }
 
@@ -233,7 +210,7 @@ export class Glace {
 
     await Promise.all(bundles.map(g => g.next()))
 
-    await this.server.bundle()
+    await this.statxc.bundle()
 
     while (await Promise.all(bundles.map(g => g.next())).then(a => a.some(x => !x.done)));
   }
