@@ -26,7 +26,7 @@ export class Glace {
     const mutex = new Mutex(undefined)
 
     const bundleAsHtml = (async function* (this: Glace, entrypoint: string) {
-      const exitpoint = path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))
+      const exitpoint = path.resolve(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))
 
       const window = new Window({ url: "file://" + entrypoint });
       const document = new window.DOMParser().parseFromString(await readFile(entrypoint, "utf8"), "text/html")
@@ -61,7 +61,7 @@ export class Glace {
 
             yield
 
-            await import(path.resolve(output))
+            await import(output)
           }
 
           return
@@ -93,7 +93,7 @@ export class Glace {
 
             yield
 
-            await import(path.resolve(output))
+            await import(output)
           }
 
           return
@@ -158,7 +158,7 @@ export class Glace {
 
       yield
 
-      window.location.href = `file://${path.resolve(exitpoint)}`
+      window.location.href = `file://${exitpoint}`
 
       using _ = await mutex.lockOrWait()
 
