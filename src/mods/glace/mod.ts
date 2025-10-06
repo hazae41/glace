@@ -9,8 +9,6 @@ import { readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-const mutex = new Mutex(undefined)
-
 export class Glace {
 
   readonly client: Bundler
@@ -28,6 +26,8 @@ export class Glace {
   }
 
   async bundle() {
+    const mutex = new Mutex(undefined)
+
     const bundleAsHtml = (async function* (this: Glace, entrypoint: string) {
       const exitpoint = path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))
 
@@ -64,29 +64,7 @@ export class Glace {
 
             yield
 
-            window.location.href = `file://${path.resolve(exitpoint)}`
-
-            using _ = await mutex.lockOrWait()
-
-            // @ts-expect-error:
-            globalThis.window = window
-
-            // @ts-expect-error:
-            globalThis.document = document
-
-            // @ts-expect-error:
-            globalThis.location = window.location
-
             await import(path.resolve(output))
-
-            // @ts-expect-error:
-            delete globalThis.window
-
-            // @ts-expect-error:
-            delete globalThis.document
-
-            // @ts-expect-error:
-            delete globalThis.location
           }
 
           return
@@ -118,29 +96,7 @@ export class Glace {
 
             yield
 
-            window.location.href = `file://${path.resolve(exitpoint)}`
-
-            using _ = await mutex.lockOrWait()
-
-            // @ts-expect-error:
-            globalThis.window = window
-
-            // @ts-expect-error:
-            globalThis.document = document
-
-            // @ts-expect-error:
-            globalThis.location = window.location
-
             await import(path.resolve(output))
-
-            // @ts-expect-error:
-            delete globalThis.window
-
-            // @ts-expect-error:
-            delete globalThis.document
-
-            // @ts-expect-error:
-            delete globalThis.location
           }
 
           return
@@ -205,7 +161,29 @@ export class Glace {
 
       yield
 
+      window.location.href = `file://${path.resolve(exitpoint)}`
+
+      using _ = await mutex.lockOrWait()
+
+      // @ts-expect-error:
+      globalThis.window = window
+
+      // @ts-expect-error:
+      globalThis.document = document
+
+      // @ts-expect-error:
+      globalThis.location = window.location
+
       while (await Promise.all(bundles.map(g => g.next())).then(a => a.some(x => !x.done)));
+
+      // @ts-expect-error:
+      delete globalThis.window
+
+      // @ts-expect-error:
+      delete globalThis.document
+
+      // @ts-expect-error:
+      delete globalThis.location
 
       await mkdirAndWriteFile(exitpoint, `<!DOCTYPE html>\n${document.documentElement.outerHTML}`)
 

@@ -2,7 +2,7 @@
 
 import process from "node:process";
 import React from "react";
-import { Glace } from "./mods/glace/mod.tsx";
+import { Glace } from "./mods/glace/mod.ts";
 
 React;
 
