@@ -4,7 +4,7 @@ import { redot } from "@/libs/redot/mod.ts";
 import { Mutex } from "@hazae41/mutex";
 import { Window, type HTMLLinkElement, type HTMLScriptElement, type HTMLStyleElement } from "happy-dom";
 import crypto from "node:crypto";
-import { glob, readFile, rm } from "node:fs/promises";
+import { glob, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -191,9 +191,14 @@ export class Glace {
 
     const exclude = await readFileAsListOrEmpty(path.join(this.entryrootdir, "./.bundleignore"))
 
-    for await (const file of glob("**/*", { cwd: this.entryrootdir, exclude })) {
-      const relative = file.toString()
+    for await (const child of glob("**/*", { cwd: this.entryrootdir, exclude })) {
+      const relative = child.toString()
       const absolute = path.resolve(this.entryrootdir, relative)
+
+      const stats = await stat(absolute)
+
+      if (stats.isDirectory())
+        continue
 
       if (relative.endsWith(".html")) {
         bundles.push(bundleAsHtml(absolute))
@@ -203,9 +208,14 @@ export class Glace {
       this.client.include(absolute)
     }
 
-    for await (const file of glob(exclude, { cwd: this.entryrootdir })) {
-      const relative = file.toString()
+    for await (const child of glob(exclude, { cwd: this.entryrootdir })) {
+      const relative = child.toString()
       const absolute = path.resolve(this.entryrootdir, relative)
+
+      const stats = await stat(absolute)
+
+      if (stats.isDirectory())
+        continue
 
       await mkdirAndWriteFile(path.join(this.exitrootdir, relative), await readFile(absolute))
     }
