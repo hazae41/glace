@@ -190,18 +190,25 @@ export class Glace {
 
     const bundles = new Array<AsyncGenerator<void, void, unknown>>()
 
+    const ignores = new Set(await readFile(path.join(this.entryrootdir, "./.glaceignore"), "utf8").then(x => x.split("\n")))
+
     for await (const entrypoint of walk(this.entryrootdir)) {
+      const relative = path.relative(this.entryrootdir, entrypoint)
+
+      if (relative === ".glaceignore")
+        continue
+
       if (entrypoint.endsWith(".html")) {
         bundles.push(bundleAsHtml(entrypoint))
         continue
       }
 
-      if ([".css", ".js", ".jsx", ".ts", ".tsx"].some(x => entrypoint.endsWith(x))) {
+      if (!ignores.has(relative)) {
         this.client.include(path.resolve(entrypoint))
         continue
       }
 
-      await mkdirAndWriteFile(path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint)), await readFile(entrypoint))
+      await mkdirAndWriteFile(path.join(this.exitrootdir, relative), await readFile(entrypoint))
     }
 
     await Promise.all(bundles.map(g => g.next()))
