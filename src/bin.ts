@@ -63,6 +63,6 @@ await glace.build()
 let timeout: number | undefined
 
 if (options.watch)
-  watch(input, { recursive: true }, () => { clearTimeout(timeout); timeout = setTimeout(() => glace.build().catch(console.error), 100) })
+  watch(input, { recursive: true }, () => { clearTimeout(timeout); timeout = setTimeout(() => glace.build().catch(console.error), 1000) })
 else
   process.exit(0)
