@@ -45,7 +45,7 @@ export class Glace {
             throw new Error("Out of bound")
 
           if (modes.includes("client")) {
-            const output = this.client.include(url.pathname)
+            const output = this.client.add(url.pathname)
 
             yield
 
@@ -57,7 +57,7 @@ export class Glace {
           }
 
           if (modes.includes("static")) {
-            const output = this.statxc.include(url.pathname)
+            const output = this.statxc.add(url.pathname)
 
             yield
 
@@ -75,7 +75,7 @@ export class Glace {
           stack.defer(() => rm(dummy, { force: true }))
 
           if (modes.includes("client")) {
-            const output = this.client.include(dummy)
+            const output = this.client.add(dummy)
 
             yield
 
@@ -89,7 +89,7 @@ export class Glace {
           }
 
           if (modes.includes("static")) {
-            const output = this.statxc.include(dummy)
+            const output = this.statxc.add(dummy)
 
             yield
 
@@ -110,7 +110,7 @@ export class Glace {
         if (path.relative(this.entryrootdir, url.pathname).startsWith(".."))
           throw new Error("Out of bound")
 
-        const output = this.client.include(url.pathname)
+        const output = this.client.add(url.pathname)
 
         yield
 
@@ -130,7 +130,7 @@ export class Glace {
 
         stack.defer(() => rm(dummy, { force: true }))
 
-        const output = this.client.include(dummy)
+        const output = this.client.add(dummy)
 
         yield
 
@@ -205,7 +205,7 @@ export class Glace {
         continue
       }
 
-      this.client.include(absolute)
+      this.client.add(absolute)
     }
 
     for await (const child of glob(exclude, { cwd: this.entryrootdir })) {
@@ -222,11 +222,11 @@ export class Glace {
 
     await Promise.all(bundles.map(g => g.next()))
 
-    await this.client.bundle()
+    await this.client.build()
 
     await Promise.all(bundles.map(g => g.next()))
 
-    await this.statxc.bundle()
+    await this.statxc.build()
 
     while (await Promise.all(bundles.map(g => g.next())).then(a => a.some(x => !x.done)));
   }
