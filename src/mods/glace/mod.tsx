@@ -19,8 +19,8 @@ export class Bundler {
   constructor(
     readonly entryrootdir: string,
     readonly exitrootdir: string,
-    readonly development: boolean,
-    readonly platform: "browser" | "node"
+    readonly platform: "browser" | "node",
+    readonly mode: "production" | "development",
   ) { }
 
   include(file: string) {
@@ -41,7 +41,7 @@ export class Bundler {
     const inputs = [...this.inputs]
     const outdir = path.join(this.exitrootdir, path.relative(this.entryrootdir, ancestor(inputs)))
 
-    for await (const output of bundle(inputs, outdir, this.development, this.platform))
+    for await (const output of bundle(inputs, outdir, this.platform, this.mode))
       await mkdirAndWriteFile(output.path, output.text)
 
     return
@@ -57,10 +57,10 @@ export class Glace {
   constructor(
     readonly entryrootdir: string,
     readonly exitrootdir: string,
-    readonly development: boolean
+    readonly mode: "production" | "development"
   ) {
-    this.client = new Bundler(tmpdir(), this.exitrootdir, this.development, "browser")
-    this.server = new Bundler(tmpdir(), tmpdir(), this.development, "node")
+    this.client = new Bundler(tmpdir(), this.exitrootdir, "browser", this.mode)
+    this.server = new Bundler(tmpdir(), tmpdir(), "node", this.mode)
 
     return
   }

@@ -7,7 +7,7 @@ export interface Output {
   readonly hash: string
 }
 
-export async function* bundle(inputs: string[], target: string, development: boolean, platform: "browser" | "node"): AsyncGenerator<Output> {
+export async function* bundle(inputs: string[], target: string, platform: "browser" | "node", mode: "production" | "development"): AsyncGenerator<Output> {
   const result = await esbuild.build({
     write: false,
     bundle: true,
@@ -16,7 +16,7 @@ export async function* bundle(inputs: string[], target: string, development: boo
     entryPoints: inputs,
     outdir: target,
     platform: platform,
-    minify: development ? false : true,
+    minify: mode === "production" ? true : false,
     banner: platform === "node" ? { js: `import { createRequire } from "node:module"; const require = createRequire(import.meta.url);` } : {},
     define: { "process.env.PLATFORM": JSON.stringify(platform) },
     external: ["node:*", ...builtinModules],

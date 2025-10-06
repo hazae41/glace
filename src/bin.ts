@@ -44,6 +44,6 @@ const {
   development = process.env.NODE_ENV === "development"
 } = options
 
-await new Glace(entryrootdir, exitrootdir, development).bundle()
+await new Glace(entryrootdir, exitrootdir, development ? "development" : "production").bundle()
 
 process.exit(0)
