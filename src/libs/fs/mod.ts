@@ -14,6 +14,6 @@ export function mkdirAndWriteFileSync(file: string, data: string | NodeJS.ArrayB
   writeFileSync(file, data)
 }
 
-export async function readFileAsTextOrEmpty(file: string) {
-  return existsSync(file) ? await readFile(file, "utf8") : ""
+export async function readFileAsListOrEmpty(file: string) {
+  return existsSync(file) ? await readFile(file, "utf8").then(x => x.split("\n")) : []
 }

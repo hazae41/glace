@@ -1,5 +1,5 @@
 import { Bundler } from "@/libs/bundle/mod.ts";
-import { mkdirAndWriteFile, readFileAsTextOrEmpty } from "@/libs/fs/mod.ts";
+import { mkdirAndWriteFile, readFileAsListOrEmpty } from "@/libs/fs/mod.ts";
 import { redot } from "@/libs/redot/mod.ts";
 import { Mutex } from "@hazae41/mutex";
 import { Window, type HTMLLinkElement, type HTMLScriptElement, type HTMLStyleElement } from "happy-dom";
@@ -189,14 +189,11 @@ export class Glace {
 
     const bundles = new Array<AsyncGenerator<void, void, unknown>>()
 
-    const exclude = await readFileAsTextOrEmpty(path.join(this.entryrootdir, "./.bundleignore")).then(x => x.split("\n"))
+    const exclude = await readFileAsListOrEmpty(path.join(this.entryrootdir, "./.bundleignore"))
 
     for await (const file of glob("**/*", { cwd: this.entryrootdir, exclude })) {
       const relative = file.toString()
       const absolute = path.resolve(this.entryrootdir, relative)
-
-      if (relative === ".bundleignore")
-        continue
 
       if (relative.endsWith(".html")) {
         bundles.push(bundleAsHtml(absolute))
