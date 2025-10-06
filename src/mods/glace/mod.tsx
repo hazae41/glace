@@ -66,7 +66,7 @@ export class Glace {
   }
 
   async bundle() {
-    const ignored = new Set<string>()
+    await using stack = new AsyncDisposableStack()
 
     const bundleAsHtml = (async function* (this: Glace, entrypoint: string) {
       const exitpoint = path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))
@@ -87,7 +87,7 @@ export class Glace {
           if (path.relative(this.entryrootdir, url.pathname).startsWith(".."))
             throw new Error("Out of bound")
 
-          ignored.add(url.pathname)
+          stack.defer(() => rm(path.join(this.exitrootdir, path.relative(this.entryrootdir, url.pathname)), { force: true }))
 
           const input = path.join(tmpdir(), path.relative(this.entryrootdir, url.pathname))
 
@@ -211,7 +211,7 @@ export class Glace {
         if (path.relative(this.entryrootdir, url.pathname).startsWith(".."))
           throw new Error("Out of bound")
 
-        ignored.add(url.pathname)
+        stack.defer(() => rm(path.join(this.exitrootdir, path.relative(this.entryrootdir, url.pathname)), { force: true }))
 
         const input = path.join(tmpdir(), path.relative(this.entryrootdir, url.pathname))
 
@@ -222,6 +222,8 @@ export class Glace {
         yield
 
         link.href = redot(path.relative(path.dirname(exitpoint), output))
+
+        return
       }).bind(this)
 
       const bundleAsStyle = (async function* (this: Glace, style: HTMLStyleElement) {
@@ -237,37 +239,32 @@ export class Glace {
       for (const link of document.querySelectorAll("link[rel=stylesheet][data-bundle]"))
         bundles.push(bundleAsStylesheetLink(link as unknown as HTMLLinkElement))
 
-      /**
-       * First stop
-       */
       await Promise.all(bundles.map(g => g.next()))
 
       yield
 
-      /**
-       * Second stop
-       */
       await Promise.all(bundles.map(g => g.next()))
 
       yield
 
-      /**
-       * Final stop
-       */
-      await Promise.all(bundles.map(g => g.next()))
+      while (await Promise.all(bundles.map(g => g.next())).then(a => a.some(x => !x.done)));
 
       await mkdirAndWriteFile(exitpoint, `<!DOCTYPE html>\n${document.documentElement.outerHTML}`)
+
+      return
     }).bind(this)
 
     // deno-lint-ignore require-yield
     const bundleAsScript = (async function* (this: Glace, entrypoint: string) {
-      ignored.add(path.resolve(entrypoint))
+      stack.defer(() => rm(path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint)), { force: true }))
 
       const input = path.join(tmpdir(), path.relative(this.entryrootdir, entrypoint))
 
       await mkdirAndWriteFile(input, `export * from "${path.resolve(entrypoint)}";`)
 
       this.client.include(input)
+
+      return
     }).bind(this)
 
     const bundles = new Array<AsyncGenerator<void, void, unknown>>()
@@ -282,32 +279,19 @@ export class Glace {
         bundles.push(bundleAsScript(entrypoint))
         continue
       }
+
+      await mkdirAndWriteFile(path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint)), await readFile(entrypoint))
     }
 
-    /**
-     * First stop
-     */
     await Promise.all(bundles.map(g => g.next()))
 
     await this.client.bundle()
 
-    for await (const entrypoint of walk(this.entryrootdir)) {
-      if (ignored.has(path.resolve(entrypoint)))
-        continue
-      await mkdirAndWriteFile(path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint)), await readFile(entrypoint))
-    }
-
-    /**
-     * Second stop
-     */
     await Promise.all(bundles.map(g => g.next()))
 
     await this.server.bundle()
 
-    /**
-     * Final stop
-     */
-    await Promise.all(bundles.map(g => g.next()))
+    while (await Promise.all(bundles.map(g => g.next())).then(a => a.some(x => !x.done)));
   }
 
 }
