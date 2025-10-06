@@ -59,15 +59,13 @@ export class Glace {
     readonly exitrootdir: string,
     readonly mode: "production" | "development"
   ) {
-    this.client = new Bundler(tmpdir(), this.exitrootdir, "browser", this.mode)
-    this.server = new Bundler(tmpdir(), tmpdir(), "node", this.mode)
+    this.client = new Bundler(this.entryrootdir, this.exitrootdir, "browser", this.mode)
+    this.server = new Bundler(this.entryrootdir, tmpdir(), "node", this.mode)
 
     return
   }
 
   async bundle() {
-    await using stack = new AsyncDisposableStack()
-
     const bundleAsHtml = (async function* (this: Glace, entrypoint: string) {
       const exitpoint = path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))
 
@@ -87,14 +85,8 @@ export class Glace {
           if (path.relative(this.entryrootdir, url.pathname).startsWith(".."))
             throw new Error("Out of bound")
 
-          stack.defer(() => rm(path.join(this.exitrootdir, path.relative(this.entryrootdir, url.pathname)), { force: true }))
-
-          const input = path.join(tmpdir(), path.relative(this.entryrootdir, url.pathname))
-
-          await mkdirAndWriteFile(input, `export * from "${path.resolve(url.pathname)}";`)
-
           if (modes.includes("client")) {
-            const output = this.client.include(input)
+            const output = this.client.include(url.pathname)
 
             yield
 
@@ -106,7 +98,7 @@ export class Glace {
           }
 
           if (modes.includes("static")) {
-            const output = this.server.include(input)
+            const output = this.server.include(url.pathname)
 
             yield
 
@@ -143,12 +135,16 @@ export class Glace {
 
           return
         } else {
-          const input = path.join(tmpdir(), path.relative(this.entryrootdir, path.dirname(entrypoint)), `./${crypto.randomUUID().slice(0, 8)}.js`)
+          await using stack = new AsyncDisposableStack()
 
-          await mkdirAndWriteFile(input, script.textContent)
+          const dummy = path.join(path.dirname(entrypoint), `./${crypto.randomUUID().slice(0, 8)}.js`)
+
+          await mkdirAndWriteFile(dummy, script.textContent)
+
+          stack.defer(() => rm(dummy, { force: true }))
 
           if (modes.includes("client")) {
-            const output = this.client.include(input)
+            const output = this.client.include(dummy)
 
             yield
 
@@ -162,7 +158,7 @@ export class Glace {
           }
 
           if (modes.includes("static")) {
-            const output = this.server.include(input)
+            const output = this.server.include(dummy)
 
             yield
 
@@ -211,13 +207,7 @@ export class Glace {
         if (path.relative(this.entryrootdir, url.pathname).startsWith(".."))
           throw new Error("Out of bound")
 
-        stack.defer(() => rm(path.join(this.exitrootdir, path.relative(this.entryrootdir, url.pathname)), { force: true }))
-
-        const input = path.join(tmpdir(), path.relative(this.entryrootdir, url.pathname))
-
-        await mkdirAndWriteFile(input, `@import "${path.resolve(url.pathname)}";`)
-
-        const output = this.client.include(input)
+        const output = this.client.include(url.pathname)
 
         yield
 
@@ -227,7 +217,25 @@ export class Glace {
       }).bind(this)
 
       const bundleAsStyle = (async function* (this: Glace, style: HTMLStyleElement) {
+        await using stack = new AsyncDisposableStack()
 
+        delete style.dataset.bundle
+
+        const dummy = path.join(path.dirname(entrypoint), `./${crypto.randomUUID().slice(0, 8)}.css`)
+
+        await mkdirAndWriteFile(dummy, style.textContent)
+
+        stack.defer(() => rm(dummy, { force: true }))
+
+        const output = this.client.include(dummy)
+
+        yield
+
+        style.textContent = `\n    ${await readFile(output, "utf8").then(x => x.trim())}\n  `
+
+        await rm(output, { force: true })
+
+        return
       }).bind(this)
 
       const bundles = new Array<AsyncGenerator<void, void, unknown>>()
@@ -254,15 +262,18 @@ export class Glace {
       return
     }).bind(this)
 
-    // deno-lint-ignore require-yield
     const bundleAsScript = (async function* (this: Glace, entrypoint: string) {
-      stack.defer(() => rm(path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint)), { force: true }))
+      this.client.include(path.resolve(entrypoint))
 
-      const input = path.join(tmpdir(), path.relative(this.entryrootdir, entrypoint))
+      yield
 
-      await mkdirAndWriteFile(input, `export * from "${path.resolve(entrypoint)}";`)
+      return
+    }).bind(this)
 
-      this.client.include(input)
+    const bundleAsStylesheet = (async function* (this: Glace, entrypoint: string) {
+      this.client.include(path.resolve(entrypoint))
+
+      yield
 
       return
     }).bind(this)
@@ -272,6 +283,11 @@ export class Glace {
     for await (const entrypoint of walk(this.entryrootdir)) {
       if (entrypoint.endsWith(".html")) {
         bundles.push(bundleAsHtml(entrypoint))
+        continue
+      }
+
+      if (entrypoint.endsWith(".css")) {
+        bundles.push(bundleAsStylesheet(entrypoint))
         continue
       }
 

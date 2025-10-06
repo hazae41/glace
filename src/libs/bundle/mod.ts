@@ -19,7 +19,7 @@ export async function* bundle(inputs: string[], target: string, platform: "brows
     minify: mode === "production" ? true : false,
     banner: platform === "node" ? { js: `import { createRequire } from "node:module"; const require = createRequire(import.meta.url);` } : {},
     define: { "process.env.PLATFORM": JSON.stringify(platform) },
-    external: ["node:*", ...builtinModules],
+    external: ["node:*", ...builtinModules]
   })
 
   for (const warning of result.warnings)
