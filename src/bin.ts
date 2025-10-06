@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { watch } from "node:fs";
 import process from "node:process";
 import React from "react";
 import { Glace } from "./mods/glace/mod.ts";
@@ -7,43 +8,61 @@ import { Glace } from "./mods/glace/mod.ts";
 React;
 
 const options: {
-  entryrootdir?: string;
-  exitrootdir?: string;
-  development?: boolean;
+  input?: string;
+  output?: string;
+  watch?: boolean
+  mode?: "development" | "production"
 } = {}
 
 for (let i = 2; i < process.argv.length; i++) {
   const arg = process.argv[i]
 
   if (arg.startsWith("--out=")) {
-    options.exitrootdir = arg.slice("--out=".length)
+    options.output = arg.slice("--out=".length)
     continue
   }
 
   if (arg.startsWith("--out")) {
-    options.exitrootdir = process.argv[++i]
+    options.output = process.argv[++i]
+    continue
+  }
+
+  if (arg.startsWith("--watch=")) {
+    options.watch = arg.slice("--watch=".length) === "true"
+    continue
+  }
+
+  if (arg.startsWith("--watch")) {
+    options.watch = true
     continue
   }
 
   if (arg.startsWith("--dev=")) {
-    options.development = arg.slice("--dev=".length) === "true"
+    options.mode = arg.slice("--dev=".length) === "true" ? "development" : "production"
     continue
   }
 
   if (arg.startsWith("--dev")) {
-    options.development = true
+    options.mode = "development"
     continue
   }
 
-  options.entryrootdir = arg
+  options.input = arg
 }
 
 const {
-  entryrootdir = "./src",
-  exitrootdir = "./dst",
-  development = process.env.NODE_ENV === "development"
+  input = "./src",
+  output = "./dst",
+  mode = process.env.NODE_ENV === "development" ? "development" : "production"
 } = options
 
-await new Glace(entryrootdir, exitrootdir, development ? "development" : "production").bundle()
+const glace = new Glace(input, output, mode)
 
-process.exit(0)
+await glace.build()
+
+let timeout: number | undefined
+
+if (options.watch)
+  watch(input, () => { clearTimeout(timeout); timeout = setTimeout(() => glace.build().catch(console.error), 100) })
+else
+  process.exit(0)

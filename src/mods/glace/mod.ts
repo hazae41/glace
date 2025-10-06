@@ -1,4 +1,4 @@
-import { Bundler } from "@/libs/bundle/mod.ts";
+import { Builder } from "@/libs/bundle/mod.ts";
 import { mkdirAndWriteFile, readFileAsListOrEmpty } from "@/libs/fs/mod.ts";
 import { redot } from "@/libs/redot/mod.ts";
 import { Mutex } from "@hazae41/mutex";
@@ -10,19 +10,24 @@ import path from "node:path";
 
 export class Glace {
 
-  readonly client: Bundler
-  readonly statxc: Bundler
+  readonly client: Builder
+  readonly statxc: Builder
 
   constructor(
     readonly entryrootdir: string,
     readonly exitrootdir: string,
     readonly mode: "production" | "development"
   ) {
-    this.client = new Bundler(this.entryrootdir, this.exitrootdir, "browser", this.mode)
-    this.statxc = new Bundler(this.entryrootdir, tmpdir(), "node", this.mode)
+    this.client = new Builder(this.entryrootdir, this.exitrootdir, "browser", this.mode)
+    this.statxc = new Builder(this.entryrootdir, tmpdir(), "node", this.mode)
   }
 
-  async bundle() {
+  async build() {
+    const start = performance.now()
+
+    this.client.clear()
+    this.statxc.clear()
+
     const mutex = new Mutex(undefined)
 
     const bundleAsHtml = (async function* (this: Glace, entrypoint: string) {
@@ -61,7 +66,7 @@ export class Glace {
 
             yield
 
-            await import(output)
+            await import(`file:${output}#${crypto.randomUUID().slice(0, 8)}`)
           }
 
           return
@@ -93,7 +98,7 @@ export class Glace {
 
             yield
 
-            await import(output)
+            await import(`file:${output}#${crypto.randomUUID().slice(0, 8)}`)
           }
 
           return
@@ -229,6 +234,8 @@ export class Glace {
     await this.statxc.build()
 
     while (await Promise.all(bundles.map(g => g.next())).then(a => a.some(x => !x.done)));
+
+    console.log(`Built in ${Math.round(performance.now() - start)}ms`)
   }
 
 }

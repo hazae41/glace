@@ -2,13 +2,23 @@ import { ancestor } from "@/libs/ancestor/mod.ts";
 import esbuild, { type BuildContext, type BuildOptions } from "esbuild";
 import { builtinModules } from "node:module";
 import path from "node:path";
+import { mkdirAndWriteFile } from "../fs/mod.ts";
 import type { Nullable } from "../nullable/mod.ts";
 
-export class Bundler {
+class ContextAndItsInputs {
+
+  constructor(
+    readonly context: BuildContext,
+    readonly inputs: Set<string>
+  ) { }
+
+}
+
+export class Builder {
 
   readonly #inputs = new Set<string>()
 
-  #context: Nullable<BuildContext>
+  #current: Nullable<ContextAndItsInputs>
 
   constructor(
     readonly entryrootdir: string,
@@ -25,32 +35,21 @@ export class Bundler {
 
     this.#inputs.add(file)
 
-    this.#context = null
-
     return outfile
   }
 
-  delete(file: string) {
-    const name = path.basename(file, path.extname(file))
-
-    const outname = name + ([".js", ".jsx", ".ts", ".tsx"].includes(path.extname(file)) ? ".js" : path.extname(file))
-    const outfile = path.join(this.exitrootdir, path.relative(this.entryrootdir, path.dirname(file)), outname)
-
-    this.#inputs.delete(file)
-
-    this.#context = null
-
-    return outfile
+  clear() {
+    this.#inputs.clear()
   }
 
-  async #make() {
-    if (this.#context != null)
-      return this.#context
+  async #compute() {
+    if (this.#current != null && this.#inputs.difference(this.#current.inputs).size === 0)
+      return this.#current.context
 
     const inputs = [...this.#inputs]
 
     const options: BuildOptions = {
-      write: true,
+      write: false,
       bundle: true,
       format: "esm",
       splitting: true,
@@ -64,15 +63,15 @@ export class Bundler {
       banner: this.platform === "node" ? { js: `import { createRequire } from "node:module"; const require = createRequire(import.meta.url);` } : {}
     } as const
 
-    const context = await esbuild.context(options)
+    const current = new ContextAndItsInputs(await esbuild.context(options), new Set(this.#inputs))
 
-    this.#context = context
+    this.#current = current
 
-    return context
+    return current.context
   }
 
   async build() {
-    const context = await this.#make()
+    const context = await this.#compute()
 
     const result = await context.rebuild()
 
@@ -84,6 +83,12 @@ export class Bundler {
 
     if (result.errors.length)
       throw new Error("Build failed")
+
+    if (result.outputFiles == null)
+      throw new Error("No output files")
+
+    for (const output of result.outputFiles)
+      await mkdirAndWriteFile(output.path, output.text)
 
     return
   }
