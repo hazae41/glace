@@ -167,6 +167,10 @@ Will output
 
 ### A simple React and Tailwind app with prerendering and hydration using Rewind
 
+```bash
+npm i react react-dom @types/react @types/react-dom @hazae41/rewind
+```
+
 > ./www/index.html
 
 ```html
