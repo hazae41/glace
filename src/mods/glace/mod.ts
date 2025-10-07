@@ -215,7 +215,7 @@ export class Glace {
         continue
       }
 
-      if (/\.(((c|m)?(t|j)s(x?))|(json))$/.test(relative)) {
+      if (/\.(((c|m)?(t|j)s(x?))|(json)|(css))$/.test(relative)) {
         this.client.add(absolute)
         continue
       }
