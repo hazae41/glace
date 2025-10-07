@@ -202,8 +202,7 @@ export class Glace {
 
     const exclude = await readFileAsListOrEmpty(path.join(this.entryrootdir, "./.bundleignore"))
 
-    for await (const child of glob("**/*", { cwd: this.entryrootdir, exclude })) {
-      const relative = child.toString()
+    for await (const relative of glob("**/*", { cwd: this.entryrootdir, exclude })) {
       const absolute = path.resolve(this.entryrootdir, relative)
 
       const stats = await stat(absolute)
@@ -224,8 +223,7 @@ export class Glace {
       touches.push(readFile(absolute).then(x => mkdirAndWriteFile(path.join(this.exitrootdir, relative), x)))
     }
 
-    for await (const child of glob(exclude, { cwd: this.entryrootdir })) {
-      const relative = child.toString()
+    for await (const relative of glob(exclude, { cwd: this.entryrootdir })) {
       const absolute = path.resolve(this.entryrootdir, relative)
 
       const stats = await stat(absolute)

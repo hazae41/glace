@@ -3,21 +3,15 @@
   "specifiers": {
     "jsr:@hazae41/mutex@3": "3.0.0",
     "jsr:@hazae41/phobos@^2.0.10": "2.0.10",
-    "jsr:@hazae41/rewind@^2.3.4": "2.3.4",
-    "jsr:@hazae41/tscousin@^1.0.20": "1.0.20",
+    "jsr:@hazae41/tscousin@^1.0.22": "1.0.22",
     "npm:@hazae41/mutex@3": "3.0.0",
     "npm:@hazae41/phobos@^2.0.10": "2.0.10",
-    "npm:@hazae41/rewind@^2.3.4": "2.3.4",
-    "npm:@hazae41/tscousin@^1.0.20": "1.0.20",
+    "npm:@hazae41/tscousin@^1.0.22": "1.0.22",
     "npm:@types/node@*": "24.2.0",
-    "npm:@types/react-dom@^19.2.0": "19.2.0_@types+react@19.2.0",
-    "npm:@types/react@^19.2.0": "19.2.0",
+    "npm:@types/node@^24.7.0": "24.7.0",
+    "npm:@typescript/native-preview@^7.0.0-dev.20251007.1": "7.0.0-dev.20251007.1",
     "npm:esbuild@~0.25.10": "0.25.10",
-    "npm:happy-dom@^19.0.2": "19.0.2",
-    "npm:react-dom@^19.2.0": "19.2.0_react@19.2.0",
-    "npm:react@^19.2.0": "19.2.0",
-    "npm:tailwindcss@^4.1.13": "4.1.14",
-    "npm:typescript@^5.9.3": "5.9.3"
+    "npm:happy-dom@^19.0.2": "19.0.2"
   },
   "jsr": {
     "@hazae41/mutex@3.0.0": {
@@ -26,14 +20,8 @@
     "@hazae41/phobos@2.0.10": {
       "integrity": "02e95522a813f6e058c768ff72890f2008897884cc3cbef1a58b5ec76396c629"
     },
-    "@hazae41/rewind@2.3.4": {
-      "integrity": "93da3f7a1eaf4801103ddc75160ae179b5043a18678e6253edd10b6e7b4610b4",
-      "dependencies": [
-        "npm:tailwindcss"
-      ]
-    },
-    "@hazae41/tscousin@1.0.20": {
-      "integrity": "d756d3dc1d50aaadd1e0ca39defd084702300710a8081516bcafea17c44ec958"
+    "@hazae41/tscousin@1.0.22": {
+      "integrity": "7f7b8a23bc5117eb9c0784af7fd2ce7e2cfd80e021be078b079102d767a6ebe0"
     }
   },
   "npm": {
@@ -173,14 +161,8 @@
     "@hazae41/phobos@2.0.10": {
       "integrity": "sha512-o+TV5xgsDx23j1rLFPZKKOj9nfMCog4FCQiEHw8IdiUjm4fiJiR3XfH2qHBzBLjN/w3RLoohcfkuaoww7WSYjw=="
     },
-    "@hazae41/rewind@2.3.4": {
-      "integrity": "sha512-JrTczrQp+C2Os4yIy37/gsaNGWhpQVWa19kLlVplTPwleQQXAJZp8sSiRJy5ieUwbKjPDnTMbARtAg3PtDAHNA==",
-      "dependencies": [
-        "tailwindcss"
-      ]
-    },
-    "@hazae41/tscousin@1.0.20": {
-      "integrity": "sha512-uWpjfLIV/Uee4qofvm6pQr52Av+a+pTOtNqiIlQyrjrZ4/LX5nDTK4Q45QH+MZqrHHhOmxzgs6EdzAKPjw/AVw==",
+    "@hazae41/tscousin@1.0.22": {
+      "integrity": "sha512-rcycSRlCc8JMlYSqTZssIQZqL0LsJUjNe+k4mQqN6jDOFv4m1nvrGfDqQNiWoli8tOvSd01JlhDr/ajabFd5Yg==",
       "bin": true
     },
     "@types/node@20.19.18": {
@@ -195,23 +177,62 @@
         "undici-types@7.10.0"
       ]
     },
-    "@types/react-dom@19.2.0_@types+react@19.2.0": {
-      "integrity": "sha512-brtBs0MnE9SMx7px208g39lRmC5uHZs96caOJfTjFcYSLHNamvaSMfJNagChVNkup2SdtOxKX1FDBkRSJe1ZAg==",
+    "@types/node@24.7.0": {
+      "integrity": "sha512-IbKooQVqUBrlzWTi79E8Fw78l8k1RNtlDDNWsFZs7XonuQSJ8oNYfEeclhprUldXISRMLzBpILuKgPlIxm+/Yw==",
       "dependencies": [
-        "@types/react"
-      ]
-    },
-    "@types/react@19.2.0": {
-      "integrity": "sha512-1LOH8xovvsKsCBq1wnT4ntDUdCJKmnEakhsuoUSy6ExlHCkGP2hqnatagYTgFk6oeL0VU31u7SNjunPN+GchtA==",
-      "dependencies": [
-        "csstype"
+        "undici-types@7.14.0"
       ]
     },
     "@types/whatwg-mimetype@3.0.2": {
       "integrity": "sha512-c2AKvDT8ToxLIOUlN51gTiHXflsfIFisS4pO7pDPoKouJCESkhZnEy623gwP9laCy5lnLDAw1vAzu2vM2YLOrA=="
     },
-    "csstype@3.1.3": {
-      "integrity": "sha512-M1uQkMl8rQK/szD0LNhtqxIPLpimGm8sOBwU7lLnCpSbTyY3yeU1Vc7l4KT5zT4s/yOxHH5O7tIuuLOCnLADRw=="
+    "@typescript/native-preview-darwin-arm64@7.0.0-dev.20251007.1": {
+      "integrity": "sha512-iJfFwaodaTztMiG5qIcBDRtn0STDtbYu0m5CoS6j+tAh0HolM/BLCELefTh6jW6In1LclimV6aEe3rSEZYQMLg==",
+      "os": ["darwin"],
+      "cpu": ["arm64"]
+    },
+    "@typescript/native-preview-darwin-x64@7.0.0-dev.20251007.1": {
+      "integrity": "sha512-TizsB7NWLzzr2LSWuzgNcuulIZ2GBJlBBhOHuVr4NKicimTQGhVQyhO3jm8Bt/x0FR5Nq9UlXbsqF7iesN9VOA==",
+      "os": ["darwin"],
+      "cpu": ["x64"]
+    },
+    "@typescript/native-preview-linux-arm64@7.0.0-dev.20251007.1": {
+      "integrity": "sha512-pfyFnBEsXfeidHW7Dc8WlPkDkjwMgbbkP+NgCKg3fWds+syzYZN7otPy0gjJMyYW/J+IRsuXO8mcp3s9lPRWfQ==",
+      "os": ["linux"],
+      "cpu": ["arm64"]
+    },
+    "@typescript/native-preview-linux-arm@7.0.0-dev.20251007.1": {
+      "integrity": "sha512-7wBoWJx9rSMQz1GUyM2OJG1UdP4fY+aFJ3dMX4NHID/iiTLRUfh+/l3wpwJWIim8H4tXD+zefTBHnRi9VGD68A==",
+      "os": ["linux"],
+      "cpu": ["arm"]
+    },
+    "@typescript/native-preview-linux-x64@7.0.0-dev.20251007.1": {
+      "integrity": "sha512-PTsAVH/cMc8nglA92Vgchlh7X9U72b3EqRd52FZzuPvpmxk+YJ9tQWF/AEPuZtd9wd2Vd5GVD+UTmLFSffrIyQ==",
+      "os": ["linux"],
+      "cpu": ["x64"]
+    },
+    "@typescript/native-preview-win32-arm64@7.0.0-dev.20251007.1": {
+      "integrity": "sha512-SBlaOEuTQ3yQ9ZJ9HG10ygA7karRZUhhpYE5Mo3vcWD8PNGOP3buNcbdGeIe8CZXTXWlqcATAieo0n65k+RfrA==",
+      "os": ["win32"],
+      "cpu": ["arm64"]
+    },
+    "@typescript/native-preview-win32-x64@7.0.0-dev.20251007.1": {
+      "integrity": "sha512-WK7dCKMf73zGAPm0NjFJhHk2cOm4AifBziyJEfg45ue/ct4ughq1OagKUfr0ZG/94nrFpSYWHcHKSUX6unANVw==",
+      "os": ["win32"],
+      "cpu": ["x64"]
+    },
+    "@typescript/native-preview@7.0.0-dev.20251007.1": {
+      "integrity": "sha512-bl9h/Me9+miK5S4vzeqChOznlE/JW+cQiTaxYVZz5ZPWMwrbZyd5erAFZ3/AivznjO6i30v28uVFCpg8AwmNBg==",
+      "optionalDependencies": [
+        "@typescript/native-preview-darwin-arm64",
+        "@typescript/native-preview-darwin-x64",
+        "@typescript/native-preview-linux-arm",
+        "@typescript/native-preview-linux-arm64",
+        "@typescript/native-preview-linux-x64",
+        "@typescript/native-preview-win32-arm64",
+        "@typescript/native-preview-win32-x64"
+      ],
+      "bin": true
     },
     "esbuild@0.25.10": {
       "integrity": "sha512-9RiGKvCwaqxO2owP61uQ4BgNborAQskMR6QusfWzQqv7AZOg5oGehdY2pRJMTKuwxd1IDBP4rSbI5lHzU7SMsQ==",
@@ -254,31 +275,14 @@
         "whatwg-mimetype"
       ]
     },
-    "react-dom@19.2.0_react@19.2.0": {
-      "integrity": "sha512-UlbRu4cAiGaIewkPyiRGJk0imDN2T3JjieT6spoL2UeSf5od4n5LB/mQ4ejmxhCFT1tYe8IvaFulzynWovsEFQ==",
-      "dependencies": [
-        "react",
-        "scheduler"
-      ]
-    },
-    "react@19.2.0": {
-      "integrity": "sha512-tmbWg6W31tQLeB5cdIBOicJDJRR2KzXsV7uSK9iNfLWQ5bIZfxuPEHp7M8wiHyHnn0DD1i7w3Zmin0FtkrwoCQ=="
-    },
-    "scheduler@0.27.0": {
-      "integrity": "sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q=="
-    },
-    "tailwindcss@4.1.14": {
-      "integrity": "sha512-b7pCxjGO98LnxVkKjaZSDeNuljC4ueKUddjENJOADtubtdo8llTaJy7HwBMeLNSSo2N5QIAgklslK1+Ir8r6CA=="
-    },
-    "typescript@5.9.3": {
-      "integrity": "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==",
-      "bin": true
-    },
     "undici-types@6.21.0": {
       "integrity": "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="
     },
     "undici-types@7.10.0": {
       "integrity": "sha512-t5Fy/nfn+14LuOc2KNYg75vZqClpAiqscVvMygNnlsHBFpSXdJaYtXMcdNLpl/Qvc3P2cB3s6lOV51nqsFq4ag=="
+    },
+    "undici-types@7.14.0": {
+      "integrity": "sha512-QQiYxHuyZ9gQUIrmPo3IA+hUl4KYk8uSA7cHrcKd/l3p1OTpZcM0Tbp9x7FAtXdAYhlasd60ncPpgu6ihG6TOA=="
     },
     "whatwg-mimetype@3.0.0": {
       "integrity": "sha512-nt+N2dzIutVRxARx1nghPKGv1xHikU7HKdfafKkLNLindmPU/ch3U31NOCGGA/dmPcmb1VlofO0vnKAcsm0o/Q=="
@@ -288,23 +292,17 @@
     "dependencies": [
       "jsr:@hazae41/mutex@3",
       "jsr:@hazae41/phobos@^2.0.10",
-      "jsr:@hazae41/rewind@^2.3.4",
-      "jsr:@hazae41/tscousin@^1.0.20"
+      "jsr:@hazae41/tscousin@^1.0.22"
     ],
     "packageJson": {
       "dependencies": [
         "npm:@hazae41/mutex@3",
         "npm:@hazae41/phobos@^2.0.10",
-        "npm:@hazae41/rewind@^2.3.4",
-        "npm:@hazae41/tscousin@^1.0.20",
+        "npm:@hazae41/tscousin@^1.0.22",
         "npm:@types/node@^24.7.0",
-        "npm:@types/react-dom@^19.2.0",
-        "npm:@types/react@^19.2.0",
+        "npm:@typescript/native-preview@^7.0.0-dev.20251007.1",
         "npm:esbuild@~0.25.10",
-        "npm:happy-dom@^19.0.2",
-        "npm:react-dom@^19.2.0",
-        "npm:react@^19.2.0",
-        "npm:typescript@^5.9.3"
+        "npm:happy-dom@^19.0.2"
       ]
     }
   }
