@@ -25,7 +25,7 @@ deno install -gfn glace -RW jsr:@hazae41/glace/bin
 
 ## Starters
 
-- [@hazae41/starter](https://github.com/hazae41/starter) / Start a cool website with React and Tailwind
+- [@hazae41/starter](https://github.com/hazae41/starter) / Start a cool webapp with React and Tailwind
 
 ## Usage
 
