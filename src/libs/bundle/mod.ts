@@ -26,7 +26,7 @@ export class Builder {
     readonly mode: "production" | "development",
   ) { }
 
-  add(file: string) {
+  add(file: string): string {
     const name = path.basename(file, path.extname(file))
 
     const outname = name + ([".js", ".jsx", ".ts", ".tsx"].includes(path.extname(file)) ? ".js" : path.extname(file))
