@@ -28,11 +28,11 @@ deno install jsr:@hazae41/glace
 ### Bash 
 
 ```bash
-glace build ./src/index.html
+glace ./www --out=./dst --dev --watch
 ```
 
 ### Code
 
 ```tsx
-await Glace.build(["./src/index.html"])
+await new Glace("./www", "./dst", "production").build()
 ```
