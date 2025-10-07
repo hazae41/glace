@@ -1,4 +1,3 @@
-import { ancestor } from "@/libs/ancestor/mod.ts";
 import esbuild, { type BuildContext, type BuildOptions } from "esbuild";
 import { builtinModules } from "node:module";
 import path from "node:path";
@@ -55,11 +54,12 @@ export class Builder {
       splitting: true,
       entryPoints: inputs,
       platform: this.platform,
+      outdir: this.exitrootdir,
+      outbase: this.entryrootdir,
       external: ["node:*", ...builtinModules],
       minify: this.mode === "production" ? true : false,
       sourcemap: this.mode === "production" ? false : "linked",
       define: { "process.env.PLATFORM": JSON.stringify(this.platform) },
-      outdir: inputs.length ? path.join(this.exitrootdir, path.relative(this.entryrootdir, ancestor(inputs))) : this.exitrootdir,
       banner: this.platform === "node" ? { js: `import { createRequire } from "node:module"; const require = createRequire(import.meta.url);` } : {}
     } as const
 

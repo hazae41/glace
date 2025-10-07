@@ -3,10 +3,10 @@
   "specifiers": {
     "jsr:@hazae41/mutex@3": "3.0.0",
     "jsr:@hazae41/phobos@^2.0.10": "2.0.10",
-    "jsr:@hazae41/tscousin@^1.0.22": "1.0.22",
+    "jsr:@hazae41/tscousin@^1.0.23": "1.0.23",
     "npm:@hazae41/mutex@3": "3.0.0",
     "npm:@hazae41/phobos@^2.0.10": "2.0.10",
-    "npm:@hazae41/tscousin@^1.0.22": "1.0.22",
+    "npm:@hazae41/tscousin@^1.0.23": "1.0.23",
     "npm:@types/node@*": "24.2.0",
     "npm:@types/node@^24.7.0": "24.7.0",
     "npm:@typescript/native-preview@^7.0.0-dev.20251007.1": "7.0.0-dev.20251007.1",
@@ -20,8 +20,8 @@
     "@hazae41/phobos@2.0.10": {
       "integrity": "02e95522a813f6e058c768ff72890f2008897884cc3cbef1a58b5ec76396c629"
     },
-    "@hazae41/tscousin@1.0.22": {
-      "integrity": "7f7b8a23bc5117eb9c0784af7fd2ce7e2cfd80e021be078b079102d767a6ebe0"
+    "@hazae41/tscousin@1.0.23": {
+      "integrity": "fbe8b9d01edb43ae5cc5aae6f1d24ade9c897cae2a371f238585db68c3fe4187"
     }
   },
   "npm": {
@@ -161,8 +161,8 @@
     "@hazae41/phobos@2.0.10": {
       "integrity": "sha512-o+TV5xgsDx23j1rLFPZKKOj9nfMCog4FCQiEHw8IdiUjm4fiJiR3XfH2qHBzBLjN/w3RLoohcfkuaoww7WSYjw=="
     },
-    "@hazae41/tscousin@1.0.22": {
-      "integrity": "sha512-rcycSRlCc8JMlYSqTZssIQZqL0LsJUjNe+k4mQqN6jDOFv4m1nvrGfDqQNiWoli8tOvSd01JlhDr/ajabFd5Yg==",
+    "@hazae41/tscousin@1.0.23": {
+      "integrity": "sha512-bXLYCg7l9Hx9YezKuKdXroVCT4GMOiRoQq1+U77+prv6wwS6BGEQ1XBNdlsfpS5tS/3c5E38potPYWNWyrhUFw==",
       "bin": true
     },
     "@types/node@20.19.18": {
@@ -292,13 +292,13 @@
     "dependencies": [
       "jsr:@hazae41/mutex@3",
       "jsr:@hazae41/phobos@^2.0.10",
-      "jsr:@hazae41/tscousin@^1.0.22"
+      "jsr:@hazae41/tscousin@^1.0.23"
     ],
     "packageJson": {
       "dependencies": [
         "npm:@hazae41/mutex@3",
         "npm:@hazae41/phobos@^2.0.10",
-        "npm:@hazae41/tscousin@^1.0.22",
+        "npm:@hazae41/tscousin@^1.0.23",
         "npm:@types/node@^24.7.0",
         "npm:@typescript/native-preview@^7.0.0-dev.20251007.1",
         "npm:esbuild@~0.25.10",
