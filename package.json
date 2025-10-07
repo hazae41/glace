@@ -3,13 +3,9 @@
   "name": "@hazae41/glace",
   "version": "1.0.0",
   "description": "Create immutable websites",
-  "homepage": "https://github.com/hazae41/glace",
   "repository": "github:hazae41/glace",
   "author": "hazae41",
   "license": "MIT",
-  "main": "./dist/cjs/index.cjs",
-  "module": "./dist/esm/index.mjs",
-  "types": "./dist/types/index.d.ts",
   "scripts": {
     "examine": "deno lint ./src && deno check ./src && deno test ./src",
     "prepare": "rm -rf ./out && tsgo && tscousin",
