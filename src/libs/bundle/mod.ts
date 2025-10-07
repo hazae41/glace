@@ -29,7 +29,7 @@ export class Builder {
   add(file: string): string {
     const name = path.basename(file, path.extname(file))
 
-    const outname = name + ([".js", ".jsx", ".ts", ".tsx"].includes(path.extname(file)) ? ".js" : path.extname(file))
+    const outname = name + (/\.(c|m)?(t|j)s(x?)$/.test(file) ? ".js" : path.extname(file))
     const outfile = path.join(this.exitrootdir, path.relative(this.entryrootdir, path.dirname(file)), outname)
 
     this.#inputs.add(file)
