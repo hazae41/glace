@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@hazae41/glace",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "description": "Create immutable websites",
   "homepage": "https://github.com/hazae41/glace",
   "repository": "github:hazae41/glace",
