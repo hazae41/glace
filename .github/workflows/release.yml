@@ -8,7 +8,7 @@ name: release
 jobs:
   compare:
     name: compare
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-25.04
     steps:
       - uses: actions/checkout@v4
       - run: "npm install -g deno"
