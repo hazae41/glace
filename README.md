@@ -21,6 +21,7 @@ deno install -gfn glace -RW jsr:@hazae41/glace/bin
 - Deploy it anywhere HTML/CSS/JS files can be stored
 - Builds are cross-platform cross-runtime reproducible
 - (soon) Immutably cached with either manual or automatic updates
+- (soon) Can be integrity checked at runtime using HTTPSec protocol
 
 ## Usage
 
