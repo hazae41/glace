@@ -2,10 +2,7 @@
 
 import { watch } from "node:fs";
 import process from "node:process";
-import React from "react";
 import { Glace } from "./mods/glace/mod.ts";
-
-React;
 
 const options: {
   input?: string;

@@ -29,8 +29,6 @@
     "@hazae41/phobos": "^2.0.10",
     "@hazae41/tscousin": "^1.0.20",
     "@types/node": "^24.7.0",
-    "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.0",
     "typescript": "^5.9.3"
   },
   "keywords": [
@@ -38,11 +36,8 @@
   ],
   "dependencies": {
     "@hazae41/mutex": "^3.0.0",
-    "@hazae41/rewind": "^2.3.4",
     "esbuild": "^0.25.10",
-    "happy-dom": "^19.0.2",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "happy-dom": "^19.0.2"
   },
   "bin": {
     "glace": "./out/bin.js"

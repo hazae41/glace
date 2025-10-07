@@ -28,6 +28,8 @@ export class Glace {
     this.client.clear()
     this.statxc.clear()
 
+    await rm(this.exitrootdir, { recursive: true, force: true })
+
     const mutex = new Mutex(undefined)
 
     const bundleAsHtml = (async function* (this: Glace, entrypoint: string) {
@@ -192,6 +194,8 @@ export class Glace {
       return
     }).bind(this)
 
+    const touches = new Array<Promise<void>>()
+
     const bundles = new Array<AsyncGenerator<void, void, unknown>>()
 
     const exclude = await readFileAsListOrEmpty(path.join(this.entryrootdir, "./.bundleignore"))
@@ -210,7 +214,12 @@ export class Glace {
         continue
       }
 
-      this.client.add(absolute)
+      if (/\.(((c|m)?(t|j)s(x?))|(json))$/.test(relative)) {
+        this.client.add(absolute)
+        continue
+      }
+
+      touches.push(readFile(absolute).then(x => mkdirAndWriteFile(path.join(this.exitrootdir, relative), x)))
     }
 
     for await (const child of glob(exclude, { cwd: this.entryrootdir })) {
@@ -222,8 +231,10 @@ export class Glace {
       if (stats.isDirectory())
         continue
 
-      await mkdirAndWriteFile(path.join(this.exitrootdir, relative), await readFile(absolute))
+      touches.push(readFile(absolute).then(x => mkdirAndWriteFile(path.join(this.exitrootdir, relative), x)))
     }
+
+    await Promise.all(touches)
 
     await Promise.all(bundles.map(g => g.next()))
 
