@@ -23,6 +23,10 @@ deno install -gfn glace -RW jsr:@hazae41/glace/bin
 - (soon) Immutably cached with either manual or automatic updates
 - (soon) Can be integrity checked at runtime using HTTPSec protocol
 
+## Starters
+
+- [@hazae41/starter](https://github.com/hazae41/starter) / A cool website with React and Tailwind
+
 ## Usage
 
 ### Bash 
