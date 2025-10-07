@@ -23,6 +23,8 @@ export class Glace {
   }
 
   async build() {
+    console.log("Building...")
+
     const start = performance.now()
 
     this.client.clear()

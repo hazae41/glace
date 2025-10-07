@@ -2,7 +2,6 @@
   "compilerOptions": {
     "target": "es2024",
     "lib": ["ESNext","DOM"],
-    "baseUrl": "./src",
     "rootDir": "./src",
     "paths": {
       "@/*": ["./*"]
