@@ -41,9 +41,9 @@ export class Glace {
       const document = new window.DOMParser().parseFromString(await readFile(entrypoint, "utf8"), "text/html")
 
       const bundleAsScript = (async function* (this: Glace, script: HTMLScriptElement) {
-        const modes = script.dataset.bundle.split(",").map(s => s.trim().toLowerCase())
+        const targets = script.getAttribute("target")!.split(",").map(s => s.trim().toLowerCase())
 
-        delete script.dataset.bundle
+        script.removeAttribute("target")
 
         if (script.src) {
           const url = new URL(script.src)
@@ -53,7 +53,7 @@ export class Glace {
           if (path.relative(this.entryrootdir, url.pathname).startsWith(".."))
             throw new Error("Out of bound")
 
-          if (modes.includes("client")) {
+          if (targets.includes("client")) {
             const output = this.client.add(url.pathname)
 
             yield
@@ -66,7 +66,7 @@ export class Glace {
             script.remove()
           }
 
-          if (modes.includes("static")) {
+          if (targets.includes("static")) {
             const output = this.statxc.add(url.pathname)
 
             yield
@@ -86,7 +86,7 @@ export class Glace {
 
           stack.defer(() => rm(dummy, { force: true }))
 
-          if (modes.includes("client")) {
+          if (targets.includes("client")) {
             const output = this.client.add(dummy)
 
             yield
@@ -104,7 +104,7 @@ export class Glace {
             script.remove()
           }
 
-          if (modes.includes("static")) {
+          if (targets.includes("static")) {
             const output = this.statxc.add(dummy)
 
             yield
@@ -114,7 +114,7 @@ export class Glace {
             yield
           }
 
-          if (modes.includes("client") && script.textContent.includes("FINAL_HTML_HASH")) {
+          if (targets.includes("client") && script.textContent.includes("FINAL_HTML_HASH")) {
             yield
 
             script.integrity = "sha256-taLJYlBhI2bqJy/6xtl0Sq9LRarNlqp8/Lkx7jtVglk=" // sha256("dummy")
@@ -131,7 +131,7 @@ export class Glace {
       }).bind(this)
 
       const bundleAsStylesheetLink = (async function* (this: Glace, link: HTMLLinkElement) {
-        delete link.dataset.bundle
+        link.removeAttribute("target")
 
         const url = new URL(link.href)
 
@@ -152,7 +152,7 @@ export class Glace {
       const bundleAsStyle = (async function* (this: Glace, style: HTMLStyleElement) {
         await using stack = new AsyncDisposableStack()
 
-        delete style.dataset.bundle
+        style.removeAttribute("target")
 
         const dummy = path.join(path.dirname(entrypoint), `./.${crypto.randomUUID().slice(0, 8)}.css`)
 
@@ -173,11 +173,11 @@ export class Glace {
 
       const bundles = new Array<AsyncGenerator<void, void, unknown>>()
 
-      for (const script of document.querySelectorAll("script[data-bundle]"))
+      for (const script of document.querySelectorAll("script[target]"))
         bundles.push(bundleAsScript(script as unknown as HTMLScriptElement))
-      for (const style of document.querySelectorAll("style[data-bundle]"))
+      for (const style of document.querySelectorAll("style[target]"))
         bundles.push(bundleAsStyle(style as unknown as HTMLStyleElement))
-      for (const link of document.querySelectorAll("link[rel=stylesheet][data-bundle]"))
+      for (const link of document.querySelectorAll("link[rel=stylesheet][target]"))
         bundles.push(bundleAsStylesheetLink(link as unknown as HTMLLinkElement))
 
       await Promise.all(bundles.map(g => g.next()))
