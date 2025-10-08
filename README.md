@@ -131,7 +131,7 @@ You can put `INJECT_HTML_HASH` into any inline script to replace it by the Base6
 </script>
 ```
 
-Note that in the preimage, `INJECT_HTML_HASH` is replaced by `DUMMY_HTML_HASH`, and the inline script integrity is replaced by `sha256-taLJYlBhI2bqJy/6xtl0Sq9LRarNlqp8/Lkx7jtVglk=` (SHA-256 of `dummy`)
+Note that in the preimage, `INJECT_HTML_HASH` is replaced by `DUMMY_HTML_HASH`, and the inline script `integrity` attribute is set to `sha256-taLJYlBhI2bqJy/6xtl0Sq9LRarNlqp8/Lkx7jtVglk=` (SHA-256 of `dummy`)
 
 ## Examples
 
