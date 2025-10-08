@@ -59,6 +59,7 @@ export class Glace {
             yield
 
             script.src = redot(path.relative(path.dirname(exitpoint), output))
+            script.integrity = this.client.integrity[`/${path.relative(this.exitrootdir, output)}`]
           } else {
             yield
 
