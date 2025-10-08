@@ -64,34 +64,34 @@ Those files will be bundled for the client unless explicitly ignored (see previo
 
 #### Choose what you bundle
 
-The content of HTML files can be bundled with a `data-bundle` attribute:
+The content of HTML files can be bundled with a `target` attribute:
 
-- Put `data-bundle` on a `<link>` or `<style>` to enable bundling and rewriting its path if any
+- Put `target="client"` on a `<link>` or `<style>` to enable bundling and rewriting its path if any
 
 ```html
- <link rel="stylesheet" data-bundle href="./index.css" />
+ <link rel="stylesheet" target="client" href="./index.css" />
 ```
 
 ```html
-<style data-bundle>
+<style target="client">
   @import "tailwindcss/index";
 </style>
 ```
 
-- Put `data-bundle` on a `<script>` tag with a value containing any of "client" or "static" separated by a comma
+- Put `target` on a `<script>` tag with a value containing any of "client" or "static" separated by a comma
   - "client" will bundle it and then include it in the output and then rewrite its path in the HTML file
   - "static" will bundle it and then execute it with the HTML file set for `document` and `location`
 
 ```html
-<script type="module" data-bundle="client,static" src="./app/index.tsx">
+<script type="module" target="client,static" src="./app/index.tsx">
 ```
 
 ```html
-<script type="module" data-bundle="client" src="./polyfill.tsx">
+<script type="module" target="client" src="./polyfill.tsx">
 ```
 
 ```html
-<script type="module" data-bundle="static">
+<script type="module" target="static">
   document.body.innerHTML = `<div>Built at ${Date.now()}</div>`
 </script>
 ```
@@ -101,7 +101,7 @@ The content of HTML files can be bundled with a `data-bundle` attribute:
 All scripts, whether inline or external, will have their `integrity` attribute automatically computed. 
 
 ```html
-<script type="module" data-bundle="client" src="./index.tsx"></script>
+<script type="module" target="client" src="./index.tsx"></script>
 ```
 
 ```html
@@ -119,7 +119,7 @@ Moreover, an importmap is automatically generated with the integrity of all outp
 You can put `FINAL_HTML_HASH` into any inline script to replace it by the Base64-encoded SHA-256 hash of the final HTML file
 
 ```html
-<script type="module" data-bundle="client" id="main">
+<script type="module" target="client" id="main">
   console.log("expected", "FINAL_HTML_HASH")
 
   main.integrity = "sha256-taLJYlBhI2bqJy/6xtl0Sq9LRarNlqp8/Lkx7jtVglk="
@@ -145,7 +145,7 @@ Note that in the preimage, `FINAL_HTML_HASH` is replaced by `DUMMY_HTML_HASH`, a
 
 <head>
   <title>Example</title>
-  <script type="module" data-bundle="static">
+  <script type="module" target="static">
     document.body.innerHTML = `<div>${Date.now()}</div>`
   </script>
 </head>
@@ -180,7 +180,7 @@ Will output
 
 <head>
   <title>Example</title>
-  <script type="module" data-bundle="static,client">
+  <script type="module" target="static,client">
     document.body.innerHTML = `<div>${Date.now()}</div>`
   </script>
 </head>
@@ -222,8 +222,8 @@ npm i react react-dom @types/react @types/react-dom @hazae41/rewind
 
 <head>
   <title>Example</title>
-  <script type="module" data-bundle="client,static" src="./index.tsx"></script>
-  <link rel="stylesheet" data-bundle data-rewind href="./index.css" />
+  <script type="module" target="client,static" src="./index.tsx"></script>
+  <link rel="stylesheet" target data-rewind href="./index.css" />
 </head>
 
 </html>
