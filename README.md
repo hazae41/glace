@@ -116,22 +116,22 @@ Moreover, an importmap is automatically generated with the integrity of all outp
 
 #### Final hash injection
 
-You can put `INJECT_HTML_HASH` into any inline script to replace it by the Base64-encoded SHA-256 hash of the final HTML file
+You can put `FINAL_HTML_HASH` into any inline script to replace it by the Base64-encoded SHA-256 hash of the final HTML file
 
 ```html
 <script type="module" data-bundle="client" id="main">
-  console.log("expected", "INJECT_HTML_HASH")
+  console.log("expected", "FINAL_HTML_HASH")
 
   main.integrity = "sha256-taLJYlBhI2bqJy/6xtl0Sq9LRarNlqp8/Lkx7jtVglk="
 
-  const dummy = new XMLSerializer().serializeToString(document).replaceAll("INJECT_HTML_HASH", "DUMMY_HTML_HASH")
+  const dummy = new XMLSerializer().serializeToString(document).replaceAll("FINAL_HTML_HASH", "DUMMY_HTML_HASH")
   const shaed = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(dummy))).toBase64()
 
   console.log("computed", `sha256-${shaed}`)
 </script>
 ```
 
-Note that in the preimage, `INJECT_HTML_HASH` is replaced by `DUMMY_HTML_HASH`, and the inline script `integrity` attribute is set to `sha256-taLJYlBhI2bqJy/6xtl0Sq9LRarNlqp8/Lkx7jtVglk=` (SHA-256 of `dummy`)
+Note that in the preimage, `FINAL_HTML_HASH` is replaced by `DUMMY_HTML_HASH`, and the inline script `integrity` attribute is set to `sha256-taLJYlBhI2bqJy/6xtl0Sq9LRarNlqp8/Lkx7jtVglk=` (SHA-256 of `dummy`)
 
 ## Examples
 
