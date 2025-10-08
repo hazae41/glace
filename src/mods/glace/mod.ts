@@ -131,6 +131,8 @@ export class Glace {
       }).bind(this)
 
       const bundleAsStylesheetLink = (async function* (this: Glace, link: HTMLLinkElement) {
+        const targets = link.getAttribute("target")!.split(",").map(s => s.trim().toLowerCase())
+
         link.removeAttribute("target")
 
         const url = new URL(link.href)
@@ -140,17 +142,21 @@ export class Glace {
         if (path.relative(this.entryrootdir, url.pathname).startsWith(".."))
           throw new Error("Out of bound")
 
-        const output = this.client.add(url.pathname)
+        if (targets.includes("client")) {
+          const output = this.client.add(url.pathname)
 
-        yield
+          yield
 
-        link.href = redot(path.relative(path.dirname(exitpoint), output))
+          link.href = redot(path.relative(path.dirname(exitpoint), output))
+        }
 
         return
       }).bind(this)
 
       const bundleAsStyle = (async function* (this: Glace, style: HTMLStyleElement) {
         await using stack = new AsyncDisposableStack()
+
+        const targets = style.getAttribute("target")!.split(",").map(s => s.trim().toLowerCase())
 
         style.removeAttribute("target")
 
@@ -160,13 +166,15 @@ export class Glace {
 
         stack.defer(() => rm(dummy, { force: true }))
 
-        const output = this.client.add(dummy)
+        if (targets.includes("client")) {
+          const output = this.client.add(dummy)
 
-        yield
+          yield
 
-        style.textContent = `\n    ${await readFile(output, "utf8").then(x => x.trim())}\n  `
+          style.textContent = `\n    ${await readFile(output, "utf8").then(x => x.trim())}\n  `
 
-        await rm(output, { force: true })
+          await rm(output, { force: true })
+        }
 
         return
       }).bind(this)
@@ -188,13 +196,17 @@ export class Glace {
 
       yield
 
-      const { integrity } = this.client
-      const importmap = { integrity }
+      {
+        const { integrity } = this.client
+        const importmap = { integrity }
 
-      const script = document.createElement("script")
-      script.type = "importmap"
-      script.textContent = JSON.stringify(importmap)
-      document.head.prepend(script)
+        const script = document.createElement("script")
+
+        script.type = "importmap"
+        script.textContent = JSON.stringify(importmap)
+
+        document.head.prepend(script)
+      }
 
       window.location.href = `file://${exitpoint}`
 
