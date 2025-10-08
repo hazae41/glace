@@ -163,6 +163,14 @@ export class Glace {
 
       yield
 
+      const { integrity } = this.client
+      const importmap = { integrity }
+
+      const script = document.createElement("script")
+      script.type = "importmap"
+      script.textContent = JSON.stringify(importmap)
+      document.head.prepend(script)
+
       await Promise.all(bundles.map(g => g.next()))
 
       yield

@@ -1,4 +1,5 @@
 import esbuild, { type BuildContext, type BuildOptions } from "esbuild";
+import crypto from "node:crypto";
 import { builtinModules } from "node:module";
 import path from "node:path";
 import { mkdirAndWriteFile } from "../fs/mod.ts";
@@ -16,6 +17,8 @@ class ContextAndItsInputs {
 export class Builder {
 
   readonly #inputs = new Set<string>()
+
+  integrity: Record<string, string> = {}
 
   #current: Nullable<ContextAndItsInputs>
 
@@ -39,6 +42,7 @@ export class Builder {
 
   clear() {
     this.#inputs.clear()
+    this.integrity = {}
   }
 
   async #compute() {
@@ -87,10 +91,17 @@ export class Builder {
     if (result.outputFiles == null)
       throw new Error("No output files")
 
-    for (const output of result.outputFiles)
-      await mkdirAndWriteFile(output.path, output.text)
+    const promises = new Array<Promise<void>>()
 
-    return
+    for (const output of result.outputFiles) {
+      const hash = crypto.createHash("sha256").update(output.contents).digest("base64")
+
+      this.integrity[`/${path.relative(this.exitrootdir, output.path)}`] = `sha256-${hash}`
+
+      promises.push(mkdirAndWriteFile(output.path, output.text))
+    }
+
+    await Promise.all(promises)
   }
 
 }
