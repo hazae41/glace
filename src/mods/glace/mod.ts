@@ -119,7 +119,7 @@ export class Glace {
 
             script.integrity = "sha256-taLJYlBhI2bqJy/6xtl0Sq9LRarNlqp8/Lkx7jtVglk=" // sha256("dummy")
 
-            const dummy = new window.XMLSerializer().serializeToString(document).replaceAll("INJECT_HTML_HASH", "DUMMY_HASH")
+            const dummy = new window.XMLSerializer().serializeToString(document).replaceAll("INJECT_HTML_HASH", "DUMMY_HTML_HASH")
             const shaed = `sha256-${crypto.createHash("sha256").update(dummy).digest("base64")}`
 
             script.textContent = script.textContent.replaceAll("INJECT_HTML_HASH", shaed)
