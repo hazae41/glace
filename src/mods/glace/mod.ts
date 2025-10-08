@@ -71,6 +71,8 @@ export class Glace {
             yield
 
             await import(`file:${output}#${crypto.randomUUID().slice(0, 8)}`)
+          } else {
+            yield
           }
 
           return
@@ -90,7 +92,7 @@ export class Glace {
 
             const pathname = `/${path.relative(this.exitrootdir, output)}`
 
-            script.textContent = `\n    ${await readFile(output, "utf8").then(x => x.trim())}\n  `
+            script.textContent = await readFile(output, "utf8")
             script.integrity = this.client.integrity[pathname]
             delete this.client.integrity[pathname]
 
@@ -107,6 +109,23 @@ export class Glace {
             yield
 
             await import(`file:${output}#${crypto.randomUUID().slice(0, 8)}`)
+          } else {
+            yield
+          }
+
+          if (modes.includes("client") && script.textContent.includes("INJECT_HTML_HASH")) {
+            const dummy = new window.XMLSerializer().serializeToString(document)
+              .replaceAll("INJECT_HTML_HASH", "DUMMY_HASH")
+              .replaceAll("/>", ">")
+              .replaceAll("\n", "")
+              .replaceAll("\r", "")
+              .replaceAll(" ", "")
+              .toLowerCase()
+
+            const digest = `sha256-${crypto.createHash("sha256").update(dummy).digest("base64")}`
+
+            script.textContent = script.textContent.replaceAll("INJECT_HTML_HASH", digest)
+            script.integrity = `sha256-${crypto.createHash("sha256").update(script.textContent).digest("base64")}`
           }
 
           return
@@ -203,7 +222,7 @@ export class Glace {
       // @ts-expect-error:
       delete globalThis.location
 
-      await mkdirAndWriteFile(exitpoint, `<!DOCTYPE html>\n${document.documentElement.outerHTML}`)
+      await mkdirAndWriteFile(exitpoint, new window.XMLSerializer().serializeToString(document))
 
       return
     }).bind(this)
