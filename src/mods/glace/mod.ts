@@ -88,7 +88,11 @@ export class Glace {
 
             yield
 
+            const pathname = `/${path.relative(this.exitrootdir, output)}`
+
             script.textContent = `\n    ${await readFile(output, "utf8").then(x => x.trim())}\n  `
+            script.integrity = this.client.integrity[pathname]
+            delete this.client.integrity[pathname]
 
             await rm(output, { force: true })
           } else {
@@ -163,6 +167,10 @@ export class Glace {
 
       yield
 
+      await Promise.all(bundles.map(g => g.next()))
+
+      yield
+
       const { integrity } = this.client
       const importmap = { integrity }
 
@@ -170,10 +178,6 @@ export class Glace {
       script.type = "importmap"
       script.textContent = JSON.stringify(importmap)
       document.head.prepend(script)
-
-      await Promise.all(bundles.map(g => g.next()))
-
-      yield
 
       window.location.href = `file://${exitpoint}`
 
