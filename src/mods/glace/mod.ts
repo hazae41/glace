@@ -79,7 +79,7 @@ export class Glace {
         } else {
           await using stack = new AsyncDisposableStack()
 
-          const dummy = path.join(path.dirname(entrypoint), `./${crypto.randomUUID().slice(0, 8)}.js`)
+          const dummy = path.join(path.dirname(entrypoint), `./.${crypto.randomUUID().slice(0, 8)}.js`)
 
           await mkdirAndWriteFile(dummy, script.textContent)
 
@@ -114,17 +114,14 @@ export class Glace {
           }
 
           if (modes.includes("client") && script.textContent.includes("INJECT_HTML_HASH")) {
-            const dummy = new window.XMLSerializer().serializeToString(document)
-              .replaceAll("INJECT_HTML_HASH", "DUMMY_HASH")
-              .replaceAll("/>", ">")
-              .replaceAll("\n", "")
-              .replaceAll("\r", "")
-              .replaceAll(" ", "")
-              .toLowerCase()
+            yield
 
-            const digest = `sha256-${crypto.createHash("sha256").update(dummy).digest("base64")}`
+            script.integrity = "sha256-taLJYlBhI2bqJy/6xtl0Sq9LRarNlqp8/Lkx7jtVglk=" // sha256("dummy")
 
-            script.textContent = script.textContent.replaceAll("INJECT_HTML_HASH", digest)
+            const dummy = new window.XMLSerializer().serializeToString(document).replaceAll("INJECT_HTML_HASH", "DUMMY_HASH")
+            const shaed = `sha256-${crypto.createHash("sha256").update(dummy).digest("base64")}`
+
+            script.textContent = script.textContent.replaceAll("INJECT_HTML_HASH", shaed)
             script.integrity = `sha256-${crypto.createHash("sha256").update(script.textContent).digest("base64")}`
           }
 
@@ -156,7 +153,7 @@ export class Glace {
 
         delete style.dataset.bundle
 
-        const dummy = path.join(path.dirname(entrypoint), `./${crypto.randomUUID().slice(0, 8)}.css`)
+        const dummy = path.join(path.dirname(entrypoint), `./.${crypto.randomUUID().slice(0, 8)}.css`)
 
         await mkdirAndWriteFile(dummy, style.textContent)
 
