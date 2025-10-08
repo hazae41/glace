@@ -108,7 +108,7 @@ All scripts, whether inline or external, will have their `integrity` attribute a
 <script type="module" src="./index.js" integrity="sha256-xP+cym0GRdm2J0F0v39EBGjOtHbuY8qEHoeQrqrhgcs="></script>
 ```
 
-Moreover, an importmap is automatically generated with the integrity of all outputted .js files (e.g. chunks).
+Moreover, an importmap is automatically generated with the integrity of all outputted .js files (e.g. chunks, workers)
 
 ```html
 <script type="importmap">{"integrity":{"/index.js":"sha256-xP+cym0GRdm2J0F0v39EBGjOtHbuY8qEHoeQrqrhgcs=","/service_worker.js":"sha256-Lnrs8BAKnjWte5DifbIEuABRsZY2ix6ClaTYss+Vhts=","/test/index.js":"sha256-aRtC2rK+KjZEEHGIDwnBfLrO/ZEEcSEwk3wAz5OJwNA=","/chunk-3GYCOXJL.js":"sha256-HqdhxMkux1ZsOr56B2Y9arLdLWzgxuAc1Zqp1N6nHqk=","/chunk-EK7ODJWE.js":"sha256-BrG/ObfO4bPHfbRbXc0Ae1ta8swysqljhje6epAGQ2w="}}</script>
