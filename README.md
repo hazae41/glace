@@ -116,7 +116,7 @@ Moreover, an importmap is automatically generated with the integrity of all outp
 
 #### Final hash injection
 
-You can put `INJECT_HTML_HASH` into any inline script to replace it by the base64-encoded SHA256 hash of the final HTML file (`INJECT_HTML_HASH` is replaced by `DUMMY_HASH` in the preimage)
+You can put `INJECT_HTML_HASH` into any inline script to replace it by the Base64-encoded SHA-256 hash of the final HTML file
 
 ```html
 <script type="module" data-bundle="client" id="main">
@@ -130,6 +130,8 @@ You can put `INJECT_HTML_HASH` into any inline script to replace it by the base6
   console.log("computed", `sha256-${shaed}`)
 </script>
 ```
+
+Note that in the preimage, `INJECT_HTML_HASH` is replaced by `DUMMY_HASH`, and the inline script integrity is replaced by `sha256-taLJYlBhI2bqJy/6xtl0Sq9LRarNlqp8/Lkx7jtVglk=` (SHA-256 of `dummy`)
 
 ## Examples
 
