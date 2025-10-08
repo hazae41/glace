@@ -62,7 +62,7 @@ Those files will be bundled for the client unless explicitly ignored (see previo
 
 ### HTML files
 
-#### data-bundle
+#### Choose what you bundle
 
 The content of HTML files can be bundled with a `data-bundle` attribute:
 
@@ -96,9 +96,27 @@ The content of HTML files can be bundled with a `data-bundle` attribute:
 </script>
 ```
 
-#### INJECT_HTML_HASH
+#### Automatic integrity compute
 
-You can put `INJECT_HTML_HASH` into any inline script to replace it by the base64-encoded SHA256 hash of the final HTML file
+All scripts, whether inline or external, will have their `integrity` attribute automatically computed. 
+
+```html
+<script type="module" data-bundle="client" src="./index.tsx"></script>
+```
+
+```html
+<script type="module" src="./index.js" integrity="sha256-xP+cym0GRdm2J0F0v39EBGjOtHbuY8qEHoeQrqrhgcs="></script>
+```
+
+Moreover, an importmap is automatically generated with the integrity of all outputted .js files (e.g. chunks).
+
+```html
+<script type="importmap">{"integrity":{"/index.js":"sha256-xP+cym0GRdm2J0F0v39EBGjOtHbuY8qEHoeQrqrhgcs=","/service_worker.js":"sha256-Lnrs8BAKnjWte5DifbIEuABRsZY2ix6ClaTYss+Vhts=","/test/index.js":"sha256-aRtC2rK+KjZEEHGIDwnBfLrO/ZEEcSEwk3wAz5OJwNA=","/chunk-3GYCOXJL.js":"sha256-HqdhxMkux1ZsOr56B2Y9arLdLWzgxuAc1Zqp1N6nHqk=","/chunk-EK7ODJWE.js":"sha256-BrG/ObfO4bPHfbRbXc0Ae1ta8swysqljhje6epAGQ2w="}}</script>
+```
+
+#### Final hash injection
+
+You can put `INJECT_HTML_HASH` into any inline script to replace it by the base64-encoded SHA256 hash of the final HTML file (`INJECT_HTML_HASH` is replaced by `DUMMY_HASH` in the preimage)
 
 ```html
 <script type="module" data-bundle="client" id="main">
