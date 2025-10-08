@@ -114,15 +114,15 @@ export class Glace {
             yield
           }
 
-          if (modes.includes("client") && script.textContent.includes("INJECT_HTML_HASH")) {
+          if (modes.includes("client") && script.textContent.includes("FINAL_HTML_HASH")) {
             yield
 
             script.integrity = "sha256-taLJYlBhI2bqJy/6xtl0Sq9LRarNlqp8/Lkx7jtVglk=" // sha256("dummy")
 
-            const dummy = new window.XMLSerializer().serializeToString(document).replaceAll("INJECT_HTML_HASH", "DUMMY_HTML_HASH")
+            const dummy = new window.XMLSerializer().serializeToString(document).replaceAll("FINAL_HTML_HASH", "DUMMY_HTML_HASH")
             const shaed = `sha256-${crypto.createHash("sha256").update(dummy).digest("base64")}`
 
-            script.textContent = script.textContent.replaceAll("INJECT_HTML_HASH", shaed)
+            script.textContent = script.textContent.replaceAll("FINAL_HTML_HASH", shaed)
             script.integrity = `sha256-${crypto.createHash("sha256").update(script.textContent).digest("base64")}`
           }
 
