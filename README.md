@@ -62,6 +62,8 @@ Those files will be bundled for the client unless explicitly ignored (see previo
 
 ### HTML files
 
+#### data-bundle
+
 The content of HTML files can be bundled with a `data-bundle` attribute:
 
 - Put `data-bundle` on a `<link>` or `<style>` to enable bundling and rewriting its path if any
@@ -91,6 +93,23 @@ The content of HTML files can be bundled with a `data-bundle` attribute:
 ```html
 <script type="module" data-bundle="static">
   document.body.innerHTML = `<div>Built at ${Date.now()}</div>`
+</script>
+```
+
+#### INJECT_HTML_HASH
+
+You can put `INJECT_HTML_HASH` into any inline script to replace it by the base64-encoded SHA256 hash of the final HTML file
+
+```html
+<script type="module" data-bundle="client" id="main">
+  console.log("expected", "INJECT_HTML_HASH")
+
+  main.integrity = "sha256-taLJYlBhI2bqJy/6xtl0Sq9LRarNlqp8/Lkx7jtVglk="
+
+  const dummy = new XMLSerializer().serializeToString(document).replaceAll("INJECT_HTML_HASH", "DUMMY_HASH")
+  const shaed = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(dummy))).toBase64()
+
+  console.log("computed", `sha256-${shaed}`)
 </script>
 ```
 
