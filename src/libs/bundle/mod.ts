@@ -94,8 +94,12 @@ export class Builder {
     const promises = new Array<Promise<void>>()
 
     for (const output of result.outputFiles) {
-      const hash = crypto.createHash("sha256").update(output.contents).digest("base64")
+      if (!output.path.endsWith(".js")) {
+        promises.push(mkdirAndWriteFile(output.path, output.text))
+        continue
+      }
 
+      const hash = crypto.createHash("sha256").update(output.contents).digest("base64")
       this.integrity[`/${path.relative(this.exitrootdir, output.path)}`] = `sha256-${hash}`
 
       promises.push(mkdirAndWriteFile(output.path, output.text))
