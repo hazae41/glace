@@ -323,6 +323,7 @@ export class Glace {
         const version = crypto.createHash("sha256").update(content).digest("hex").slice(0, 6)
 
         await mkdirAndWriteFile(path.join(this.exitrootdir, path.dirname(relative), `./${name}.${version}` + extname), content)
+
         continue
       }
     }
