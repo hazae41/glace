@@ -40,7 +40,11 @@ export class Glace {
       const window = new Window({ url: "file://" + entrypoint });
       const document = new window.DOMParser().parseFromString(await readFile(entrypoint, "utf8"), "text/html")
 
+      const integrity: Record<string, string> = {}
+
       const bundleAsScript = (async function* (this: Glace, script: HTMLScriptElement) {
+        await using stack = new AsyncDisposableStack()
+
         const targets = script.getAttribute("target")!.split(",").map(s => s.trim().toLowerCase())
 
         script.removeAttribute("target")
@@ -59,7 +63,12 @@ export class Glace {
             yield
 
             script.src = redot(path.relative(path.dirname(exitpoint), output))
-            script.integrity = this.client.integrity[`/${path.relative(this.exitrootdir, output)}`]
+            script.integrity = this.client.integrity[output]
+
+            for (const imported of this.client.importeds[output])
+              integrity[redot(path.relative(path.dirname(exitpoint), imported))] = this.client.integrity[imported]
+
+            integrity[redot(path.relative(path.dirname(exitpoint), output))] = this.client.integrity[output]
           } else {
             yield
 
@@ -91,11 +100,11 @@ export class Glace {
 
             yield
 
-            const pathname = `/${path.relative(this.exitrootdir, output)}`
-
             script.textContent = await readFile(output, "utf8")
-            script.integrity = this.client.integrity[pathname]
-            delete this.client.integrity[pathname]
+            script.integrity = this.client.integrity[output]
+
+            for (const imported of this.client.importeds[output])
+              integrity[redot(path.relative(path.dirname(exitpoint), imported))] = this.client.integrity[imported]
 
             await rm(output, { force: true })
           } else {
@@ -196,17 +205,12 @@ export class Glace {
 
       yield
 
-      {
-        const { integrity } = this.client
-        const importmap = { integrity }
+      const importmap = document.createElement("script")
 
-        const script = document.createElement("script")
+      importmap.type = "importmap"
+      importmap.textContent = JSON.stringify({ integrity })
 
-        script.type = "importmap"
-        script.textContent = JSON.stringify(importmap)
-
-        document.head.prepend(script)
-      }
+      document.head.prepend(importmap)
 
       window.location.href = `file://${exitpoint}`
 
@@ -286,6 +290,42 @@ export class Glace {
     await this.statxc.build()
 
     while (await Promise.all(bundles.map(g => g.next())).then(a => a.some(x => !x.done)));
+
+    // for await (const relative of glob("**/*", { cwd: this.entryrootdir, exclude })) {
+    //   const absolute = path.resolve(this.entryrootdir, relative)
+
+    //   const stats = await stat(absolute)
+
+    //   if (stats.isDirectory())
+    //     continue
+
+    //   const extname = path.extname(absolute)
+    //   const rawname = path.basename(absolute, extname)
+
+
+    // }
+
+    for await (const relative of glob("**/*", { cwd: this.exitrootdir, exclude })) {
+      const absolute = path.resolve(this.exitrootdir, relative)
+
+      const stats = await stat(absolute)
+
+      if (stats.isDirectory())
+        continue
+
+      const extname = path.extname(absolute)
+      const rawname = path.basename(absolute, extname)
+
+      if (rawname.endsWith(".latest")) {
+        const name = path.basename(rawname, ".latest")
+
+        const content = await readFile(absolute)
+        const version = crypto.createHash("sha256").update(content).digest("hex").slice(0, 6)
+
+        await mkdirAndWriteFile(path.join(this.exitrootdir, path.dirname(relative), `./${name}.${version}` + extname), content)
+        continue
+      }
+    }
 
     console.log(`Built in ${Math.round(performance.now() - start)}ms`)
   }

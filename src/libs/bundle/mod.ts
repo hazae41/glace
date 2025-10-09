@@ -2,6 +2,7 @@ import esbuild, { type BuildContext, type BuildOptions } from "esbuild";
 import crypto from "node:crypto";
 import { builtinModules } from "node:module";
 import path from "node:path";
+import process from "node:process";
 import { mkdirAndWriteFile } from "../fs/mod.ts";
 import type { Nullable } from "../nullable/mod.ts";
 
@@ -16,8 +17,9 @@ class ContextAndItsInputs {
 
 export class Builder {
 
-  readonly #inputs = new Set<string>()
+  readonly inputs = new Set<string>()
 
+  importeds: Record<string, string[]> = {}
   integrity: Record<string, string> = {}
 
   #current: Nullable<ContextAndItsInputs>
@@ -35,26 +37,26 @@ export class Builder {
     const outname = name + (/\.(c|m)?(t|j)s(x?)$/.test(file) ? ".js" : path.extname(file))
     const outfile = path.join(this.exitrootdir, path.relative(this.entryrootdir, path.dirname(file)), outname)
 
-    this.#inputs.add(file)
+    this.inputs.add(file)
 
     return outfile
   }
 
   clear() {
-    this.#inputs.clear()
-    this.integrity = {}
+    this.inputs.clear()
   }
 
   async #compute() {
-    if (this.#current != null && this.#inputs.difference(this.#current.inputs).size === 0)
+    if (this.#current != null && this.inputs.difference(this.#current.inputs).size === 0)
       return this.#current.context
 
-    const inputs = [...this.#inputs]
+    const inputs = [...this.inputs]
 
     const options: BuildOptions = {
       write: false,
       bundle: true,
       format: "esm",
+      metafile: true,
       splitting: true,
       entryPoints: inputs,
       platform: this.platform,
@@ -67,7 +69,7 @@ export class Builder {
       banner: this.platform === "node" ? { js: `import { createRequire } from "node:module"; const require = createRequire(import.meta.url);` } : {}
     } as const
 
-    const current = new ContextAndItsInputs(await esbuild.context(options), new Set(this.#inputs))
+    const current = new ContextAndItsInputs(await esbuild.context(options), new Set(this.inputs))
 
     this.#current = current
 
@@ -91,21 +93,44 @@ export class Builder {
     if (result.outputFiles == null)
       throw new Error("No output files")
 
-    const promises = new Array<Promise<void>>()
+    this.importeds = {}
+    this.integrity = {}
 
-    for (const output of result.outputFiles) {
-      if (!output.path.endsWith(".js")) {
-        promises.push(mkdirAndWriteFile(output.path, output.text))
-        continue
-      }
+    const gather = (relative: string, importeds: string[] = []) => {
+      const metadata = result.metafile!.outputs[relative]
 
-      const hash = crypto.createHash("sha256").update(output.contents).digest("base64")
-      this.integrity[`/${path.relative(this.exitrootdir, output.path)}`] = `sha256-${hash}`
+      if (metadata == null)
+        return
 
-      promises.push(mkdirAndWriteFile(output.path, output.text))
+      importeds.push(relative)
+
+      for (const imported of metadata.imports)
+        gather(imported.path, importeds)
+
+      return
     }
 
-    await Promise.all(promises)
+    for (const output of result.outputFiles) {
+      const relative = path.relative(process.cwd(), output.path)
+      const metadata = result.metafile!.outputs[relative]!
+
+      const importeds: string[] = []
+
+      for (const imported of metadata.imports)
+        gather(imported.path, importeds)
+
+      this.importeds[relative] = importeds
+
+      await mkdirAndWriteFile(output.path, output.text)
+
+      const hash = crypto.createHash("sha256").update(output.contents).digest()
+
+      this.integrity[relative] = `sha256-${hash.toString("base64")}`
+
+      continue
+    }
+
+    return
   }
 
 }
