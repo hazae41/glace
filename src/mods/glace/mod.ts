@@ -65,10 +65,12 @@ export class Glace {
             script.src = redot(path.relative(path.dirname(exitpoint), output))
             script.integrity = this.client.integrity[output]
 
-            for (const imported of this.client.importeds[output])
-              integrity[redot(path.relative(path.dirname(exitpoint), imported))] = this.client.integrity[imported]
+            const directory = path.dirname(exitpoint)
 
-            integrity[redot(path.relative(path.dirname(exitpoint), output))] = this.client.integrity[output]
+            for (const imported of this.client.importeds[output])
+              integrity[redot(path.relative(directory, imported))] = this.client.integrity[imported]
+
+            integrity[redot(path.relative(directory, output))] = this.client.integrity[output]
           } else {
             yield
 
@@ -103,8 +105,10 @@ export class Glace {
             script.textContent = await readFile(output, "utf8")
             script.integrity = this.client.integrity[output]
 
+            const directory = path.dirname(exitpoint)
+
             for (const imported of this.client.importeds[output])
-              integrity[redot(path.relative(path.dirname(exitpoint), imported))] = this.client.integrity[imported]
+              integrity[redot(path.relative(directory, imported))] = this.client.integrity[imported]
 
             await rm(output, { force: true })
           } else {
