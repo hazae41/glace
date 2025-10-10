@@ -43,17 +43,30 @@ export class Glace {
       const integrity: Record<string, string> = {}
 
       const bundleAsScript = (async function* (this: Glace, script: HTMLScriptElement) {
-        const targets = script.getAttribute("target")!.split(",").map(s => s.trim().toLowerCase())
-
-        script.removeAttribute("target")
-
         if (script.src) {
           const url = new URL(script.src)
 
           if (url.protocol !== "file:")
-            throw new Error("Unsupported protocol")
+            return
           if (path.relative(this.entryrootdir, url.pathname).startsWith(".."))
-            throw new Error("Out of bound")
+            return
+
+          const targets = script.getAttribute("target")?.split(",").map(s => s.trim().toLowerCase())
+
+          if (targets == null) {
+            const relative = path.relative(path.dirname(exitpoint), url.pathname)
+
+            const data = await readFile(url.pathname)
+            const hash = crypto.createHash("sha256").update(data).digest("base64")
+
+            script.integrity = `sha256-${hash}`
+
+            integrity[relative] = `sha256-${hash}`
+
+            return
+          }
+
+          script.removeAttribute("target")
 
           if (targets.includes("client")) {
             const output = this.client.add(url.pathname)
@@ -111,6 +124,14 @@ export class Glace {
           return
         } else {
           await using stack = new AsyncDisposableStack()
+
+          const targets = script.getAttribute("target")?.split(",").map(s => s.trim().toLowerCase())
+
+          if (targets == null) {
+            script.integrity = `sha256-${crypto.createHash("sha256").update(script.textContent).digest("base64")}`
+
+            return
+          }
 
           const dummy = path.join(path.dirname(entrypoint), `./.${crypto.randomUUID().slice(0, 8)}.js`)
 
@@ -177,16 +198,25 @@ export class Glace {
       }).bind(this)
 
       const bundleAsStylesheetLink = (async function* (this: Glace, link: HTMLLinkElement) {
-        const targets = link.getAttribute("target")!.split(",").map(s => s.trim().toLowerCase())
-
-        link.removeAttribute("target")
-
         const url = new URL(link.href)
 
         if (url.protocol !== "file:")
-          throw new Error("Unsupported protocol")
+          return
         if (path.relative(this.entryrootdir, url.pathname).startsWith(".."))
-          throw new Error("Out of bound")
+          return
+
+        const targets = link.getAttribute("target")?.split(",").map(s => s.trim().toLowerCase())
+
+        if (targets == null) {
+          const data = await readFile(url.pathname)
+          const hash = crypto.createHash("sha256").update(data).digest("base64")
+
+          link.setAttribute("integrity", `sha256-${hash}`)
+
+          return
+        }
+
+        link.removeAttribute("target")
 
         if (targets.includes("client")) {
           const output = this.client.add(url.pathname)
@@ -194,7 +224,47 @@ export class Glace {
           yield
 
           link.href = redot(path.relative(path.dirname(exitpoint), output))
+
+          link.setAttribute("integrity", this.client.integrity[output])
         }
+
+        return
+      }).bind(this)
+
+      // deno-lint-ignore require-yield
+      const bundleAsModulepreloadLink = (async function* (this: Glace, link: HTMLLinkElement) {
+        const url = new URL(link.href)
+
+        if (url.protocol !== "file:")
+          return
+        if (path.relative(this.entryrootdir, url.pathname).startsWith(".."))
+          return
+
+        const relative = path.relative(path.dirname(exitpoint), url.pathname)
+
+        const data = await readFile(url.pathname)
+        const hash = crypto.createHash("sha256").update(data).digest("base64")
+
+        link.setAttribute("integrity", `sha256-${hash}`)
+
+        integrity[relative] = `sha256-${hash}`
+
+        return
+      }).bind(this)
+
+      // deno-lint-ignore require-yield
+      const bundleAsPreloadLink = (async function* (this: Glace, link: HTMLLinkElement) {
+        const url = new URL(link.href)
+
+        if (url.protocol !== "file:")
+          return
+        if (path.relative(this.entryrootdir, url.pathname).startsWith(".."))
+          return
+
+        const data = await readFile(url.pathname)
+        const hash = crypto.createHash("sha256").update(data).digest("base64")
+
+        link.setAttribute("integrity", `sha256-${hash}`)
 
         return
       }).bind(this)
@@ -202,7 +272,10 @@ export class Glace {
       const bundleAsStyle = (async function* (this: Glace, style: HTMLStyleElement) {
         await using stack = new AsyncDisposableStack()
 
-        const targets = style.getAttribute("target")!.split(",").map(s => s.trim().toLowerCase())
+        const targets = style.getAttribute("target")?.split(",").map(s => s.trim().toLowerCase())
+
+        if (targets == null)
+          return
 
         style.removeAttribute("target")
 
@@ -227,12 +300,16 @@ export class Glace {
 
       const bundles = new Array<AsyncGenerator<void, void, unknown>>()
 
-      for (const script of document.querySelectorAll("script[target]"))
+      for (const script of document.querySelectorAll("script"))
         bundles.push(bundleAsScript(script as unknown as HTMLScriptElement))
-      for (const style of document.querySelectorAll("style[target]"))
+      for (const style of document.querySelectorAll("style"))
         bundles.push(bundleAsStyle(style as unknown as HTMLStyleElement))
-      for (const link of document.querySelectorAll("link[rel=stylesheet][target]"))
+      for (const link of document.querySelectorAll("link[rel=stylesheet]"))
         bundles.push(bundleAsStylesheetLink(link as unknown as HTMLLinkElement))
+      for (const link of document.querySelectorAll("link[rel=preload]"))
+        bundles.push(bundleAsPreloadLink(link as unknown as HTMLLinkElement))
+      for (const link of document.querySelectorAll("link[rel=modulepreload]"))
+        bundles.push(bundleAsModulepreloadLink(link as unknown as HTMLLinkElement))
 
       await Promise.all(bundles.map(g => g.next()))
 
@@ -331,7 +408,7 @@ export class Glace {
     const manifestAsPath = path.join(this.exitrootdir, "./manifest.json")
     const manifestAsJson = await readFile(manifestAsPath, "utf8").then(x => JSON.parse(x)).catch(() => ({}))
 
-    manifestAsJson.files ??= []
+    manifestAsJson.files = []
 
     for await (const relative of glob("**/*", { cwd: this.exitrootdir, exclude })) {
       const absolute = path.resolve(this.exitrootdir, relative)
