@@ -51,87 +51,52 @@ export class Glace {
           if (path.relative(this.entryrootdir, url.pathname).startsWith(".."))
             return
 
-          const targets = script.getAttribute("target")?.split(",").map(s => s.trim().toLowerCase())
+          const client = this.client.add(url.pathname)
 
-          if (targets == null) {
-            const relative = path.relative(path.dirname(exitpoint), url.pathname)
+          yield
 
-            const data = await readFile(url.pathname)
-            const hash = crypto.createHash("sha256").update(data).digest("base64")
+          script.src = redot(path.relative(path.dirname(exitpoint), client))
+          script.integrity = this.client.integrity[client]
 
-            script.integrity = `sha256-${hash}`
+          const directory = path.dirname(exitpoint)
 
-            integrity[relative] = `sha256-${hash}`
+          for (const imported of this.client.importeds[client]) {
+            const relative = redot(path.relative(directory, imported))
 
-            return
-          }
-
-          script.removeAttribute("target")
-
-          if (targets.includes("client")) {
-            const output = this.client.add(url.pathname)
-
-            yield
-
-            script.src = redot(path.relative(path.dirname(exitpoint), output))
-            script.integrity = this.client.integrity[output]
-
-            const directory = path.dirname(exitpoint)
-
-            for (const imported of this.client.importeds[output]) {
-              const relative = redot(path.relative(directory, imported))
-
-              integrity[relative] = this.client.integrity[imported]
-
-              const link = document.createElement("link")
-
-              link.rel = "modulepreload"
-              link.href = relative
-
-              link.setAttribute("integrity", this.client.integrity[imported])
-
-              document.head.prepend(link)
-            }
-
-            const relative = redot(path.relative(directory, output))
-
-            integrity[relative] = this.client.integrity[output]
+            integrity[relative] = this.client.integrity[imported]
 
             const link = document.createElement("link")
 
             link.rel = "modulepreload"
             link.href = relative
 
-            link.setAttribute("integrity", this.client.integrity[output])
+            link.setAttribute("integrity", this.client.integrity[imported])
 
             document.head.prepend(link)
-          } else {
-            yield
-
-            script.remove()
           }
 
-          if (targets.includes("static")) {
-            const output = this.statxc.add(url.pathname)
+          const relative = redot(path.relative(directory, client))
 
-            yield
+          integrity[relative] = this.client.integrity[client]
 
-            await import(`file:${output}#${crypto.randomUUID().slice(0, 8)}`)
-          } else {
-            yield
-          }
+          const link = document.createElement("link")
+
+          link.rel = "modulepreload"
+          link.href = relative
+
+          link.setAttribute("integrity", this.client.integrity[client])
+
+          document.head.prepend(link)
+
+          const statxc = this.statxc.add(url.pathname)
+
+          yield
+
+          await import(`file:${statxc}#${crypto.randomUUID().slice(0, 8)}`)
 
           return
         } else {
           await using stack = new AsyncDisposableStack()
-
-          const targets = script.getAttribute("target")?.split(",").map(s => s.trim().toLowerCase())
-
-          if (targets == null) {
-            script.integrity = `sha256-${crypto.createHash("sha256").update(script.textContent).digest("base64")}`
-
-            return
-          }
 
           const dummy = path.join(path.dirname(entrypoint), `./.${crypto.randomUUID().slice(0, 8)}.js`)
 
@@ -139,51 +104,41 @@ export class Glace {
 
           stack.defer(() => rm(dummy, { force: true }))
 
-          if (targets.includes("client")) {
-            const output = this.client.add(dummy)
+          const client = this.client.add(dummy)
 
-            yield
+          yield
 
-            script.textContent = await readFile(output, "utf8")
-            script.integrity = this.client.integrity[output]
+          script.textContent = await readFile(client, "utf8")
+          script.integrity = this.client.integrity[client]
 
-            const directory = path.dirname(exitpoint)
+          const directory = path.dirname(exitpoint)
 
-            for (const imported of this.client.importeds[output]) {
-              const relative = redot(path.relative(directory, imported))
+          for (const imported of this.client.importeds[client]) {
+            const relative = redot(path.relative(directory, imported))
 
-              integrity[relative] = this.client.integrity[imported]
+            integrity[relative] = this.client.integrity[imported]
 
-              const link = document.createElement("link")
+            const link = document.createElement("link")
 
-              link.rel = "modulepreload"
-              link.href = relative
+            link.rel = "modulepreload"
+            link.href = relative
 
-              link.setAttribute("integrity", this.client.integrity[imported])
+            link.setAttribute("integrity", this.client.integrity[imported])
 
-              document.head.prepend(link)
-            }
-
-            await rm(output, { force: true })
-          } else {
-            yield
-
-            script.remove()
+            document.head.prepend(link)
           }
 
-          if (targets.includes("static")) {
-            const output = this.statxc.add(dummy)
+          await rm(client, { force: true })
 
-            yield
+          const statxc = this.statxc.add(dummy)
 
-            await import(`file:${output}#${crypto.randomUUID().slice(0, 8)}`)
-          } else {
-            yield
-          }
+          yield
 
-          if (targets.includes("client") && script.textContent.includes("FINAL_HTML_HASH")) {
-            yield
+          await import(`file:${statxc}#${crypto.randomUUID().slice(0, 8)}`)
 
+          yield
+
+          if (script.textContent.includes("FINAL_HTML_HASH")) {
             script.integrity = "sha256-taLJYlBhI2bqJy/6xtl0Sq9LRarNlqp8/Lkx7jtVglk=" // sha256("dummy")
 
             const data = new window.XMLSerializer().serializeToString(document).replaceAll("FINAL_HTML_HASH", "DUMMY_HTML_HASH")
@@ -205,28 +160,13 @@ export class Glace {
         if (path.relative(this.entryrootdir, url.pathname).startsWith(".."))
           return
 
-        const targets = link.getAttribute("target")?.split(",").map(s => s.trim().toLowerCase())
+        const client = this.client.add(url.pathname)
 
-        if (targets == null) {
-          const data = await readFile(url.pathname)
-          const hash = crypto.createHash("sha256").update(data).digest("base64")
+        yield
 
-          link.setAttribute("integrity", `sha256-${hash}`)
+        link.href = redot(path.relative(path.dirname(exitpoint), client))
 
-          return
-        }
-
-        link.removeAttribute("target")
-
-        if (targets.includes("client")) {
-          const output = this.client.add(url.pathname)
-
-          yield
-
-          link.href = redot(path.relative(path.dirname(exitpoint), output))
-
-          link.setAttribute("integrity", this.client.integrity[output])
-        }
+        link.setAttribute("integrity", this.client.integrity[client])
 
         return
       }).bind(this)
@@ -272,28 +212,19 @@ export class Glace {
       const bundleAsStyle = (async function* (this: Glace, style: HTMLStyleElement) {
         await using stack = new AsyncDisposableStack()
 
-        const targets = style.getAttribute("target")?.split(",").map(s => s.trim().toLowerCase())
-
-        if (targets == null)
-          return
-
-        style.removeAttribute("target")
-
         const dummy = path.join(path.dirname(entrypoint), `./.${crypto.randomUUID().slice(0, 8)}.css`)
 
         await mkdirAndWriteFile(dummy, style.textContent)
 
         stack.defer(() => rm(dummy, { force: true }))
 
-        if (targets.includes("client")) {
-          const output = this.client.add(dummy)
+        const output = this.client.add(dummy)
 
-          yield
+        yield
 
-          style.textContent = `\n    ${await readFile(output, "utf8").then(x => x.trim())}\n  `
+        style.textContent = `\n    ${await readFile(output, "utf8").then(x => x.trim())}\n  `
 
-          await rm(output, { force: true })
-        }
+        await rm(output, { force: true })
 
         return
       }).bind(this)
