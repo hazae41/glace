@@ -43,8 +43,6 @@ export class Glace {
       const integrity: Record<string, string> = {}
 
       const bundleAsScript = (async function* (this: Glace, script: HTMLScriptElement) {
-        await using stack = new AsyncDisposableStack()
-
         const targets = script.getAttribute("target")!.split(",").map(s => s.trim().toLowerCase())
 
         script.removeAttribute("target")
@@ -67,10 +65,33 @@ export class Glace {
 
             const directory = path.dirname(exitpoint)
 
-            for (const imported of this.client.importeds[output])
-              integrity[redot(path.relative(directory, imported))] = this.client.integrity[imported]
+            for (const imported of this.client.importeds[output]) {
+              const relative = redot(path.relative(directory, imported))
 
-            integrity[redot(path.relative(directory, output))] = this.client.integrity[output]
+              integrity[relative] = this.client.integrity[imported]
+
+              const link = document.createElement("link")
+
+              link.rel = "modulepreload"
+              link.href = relative
+
+              link.setAttribute("integrity", this.client.integrity[imported])
+
+              document.head.prepend(link)
+            }
+
+            const relative = redot(path.relative(directory, output))
+
+            integrity[relative] = this.client.integrity[output]
+
+            const link = document.createElement("link")
+
+            link.rel = "modulepreload"
+            link.href = relative
+
+            link.setAttribute("integrity", this.client.integrity[output])
+
+            document.head.prepend(link)
           } else {
             yield
 
@@ -107,8 +128,20 @@ export class Glace {
 
             const directory = path.dirname(exitpoint)
 
-            for (const imported of this.client.importeds[output])
-              integrity[redot(path.relative(directory, imported))] = this.client.integrity[imported]
+            for (const imported of this.client.importeds[output]) {
+              const relative = redot(path.relative(directory, imported))
+
+              integrity[relative] = this.client.integrity[imported]
+
+              const link = document.createElement("link")
+
+              link.rel = "modulepreload"
+              link.href = relative
+
+              link.setAttribute("integrity", this.client.integrity[imported])
+
+              document.head.prepend(link)
+            }
 
             await rm(output, { force: true })
           } else {
@@ -132,10 +165,10 @@ export class Glace {
 
             script.integrity = "sha256-taLJYlBhI2bqJy/6xtl0Sq9LRarNlqp8/Lkx7jtVglk=" // sha256("dummy")
 
-            const dummy = new window.XMLSerializer().serializeToString(document).replaceAll("FINAL_HTML_HASH", "DUMMY_HTML_HASH")
-            const shaed = `sha256-${crypto.createHash("sha256").update(dummy).digest("base64")}`
+            const data = new window.XMLSerializer().serializeToString(document).replaceAll("FINAL_HTML_HASH", "DUMMY_HTML_HASH")
+            const hash = `sha256-${crypto.createHash("sha256").update(data).digest("base64")}`
 
-            script.textContent = script.textContent.replaceAll("FINAL_HTML_HASH", shaed)
+            script.textContent = script.textContent.replaceAll("FINAL_HTML_HASH", hash)
             script.integrity = `sha256-${crypto.createHash("sha256").update(script.textContent).digest("base64")}`
           }
 
@@ -295,19 +328,10 @@ export class Glace {
 
     while (await Promise.all(bundles.map(g => g.next())).then(a => a.some(x => !x.done)));
 
-    // for await (const relative of glob("**/*", { cwd: this.entryrootdir, exclude })) {
-    //   const absolute = path.resolve(this.entryrootdir, relative)
+    const manifestAsPath = path.join(this.exitrootdir, "./manifest.json")
+    const manifestAsJson = await readFile(manifestAsPath, "utf8").then(x => JSON.parse(x)).catch(() => ({}))
 
-    //   const stats = await stat(absolute)
-
-    //   if (stats.isDirectory())
-    //     continue
-
-    //   const extname = path.extname(absolute)
-    //   const rawname = path.basename(absolute, extname)
-
-
-    // }
+    manifestAsJson.files ??= []
 
     for await (const relative of glob("**/*", { cwd: this.exitrootdir, exclude })) {
       const absolute = path.resolve(this.exitrootdir, relative)
@@ -317,20 +341,31 @@ export class Glace {
       if (stats.isDirectory())
         continue
 
+      const data = await readFile(absolute)
+      const hash = crypto.createHash("sha256").update(data).digest()
+
+      const integrity = `sha256-${hash.toString("base64")}`
+
+      manifestAsJson.files.push({ src: "/" + relative, integrity })
+
       const extname = path.extname(absolute)
       const rawname = path.basename(absolute, extname)
 
       if (rawname.endsWith(".latest")) {
         const name = path.basename(rawname, ".latest")
 
-        const content = await readFile(absolute)
-        const version = crypto.createHash("sha256").update(content).digest("hex").slice(0, 6)
+        const vrelative = path.join(path.dirname(relative), `./${name}.${hash.toString("hex").slice(0, 6)}` + extname)
+        const vabsolute = path.resolve(this.exitrootdir, vrelative)
 
-        await mkdirAndWriteFile(path.join(this.exitrootdir, path.dirname(relative), `./${name}.${version}` + extname), content)
+        await mkdirAndWriteFile(vabsolute, data)
+
+        manifestAsJson.files.push({ src: "/" + vrelative, integrity })
 
         continue
       }
     }
+
+    await mkdirAndWriteFile(manifestAsPath, JSON.stringify(manifestAsJson, null, 2))
 
     console.log(`Built in ${Math.round(performance.now() - start)}ms`)
   }
