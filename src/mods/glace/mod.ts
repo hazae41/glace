@@ -4,6 +4,7 @@ import { redot } from "@/libs/redot/mod.ts";
 import { Mutex } from "@hazae41/mutex";
 import { Window, type HTMLLinkElement, type HTMLScriptElement, type HTMLStyleElement } from "happy-dom";
 import crypto from "node:crypto";
+import { existsSync } from "node:fs";
 import { glob, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -49,6 +50,8 @@ export class Glace {
           if (url.protocol !== "file:")
             return
           if (path.relative(this.entryrootdir, url.pathname).startsWith(".."))
+            return
+          if (!existsSync(url.pathname))
             return
 
           const client = this.client.add(url.pathname)
@@ -159,6 +162,8 @@ export class Glace {
           return
         if (path.relative(this.entryrootdir, url.pathname).startsWith(".."))
           return
+        if (!existsSync(url.pathname))
+          return
 
         const client = this.client.add(url.pathname)
 
@@ -178,6 +183,8 @@ export class Glace {
         if (url.protocol !== "file:")
           return
         if (path.relative(this.entryrootdir, url.pathname).startsWith(".."))
+          return
+        if (!existsSync(url.pathname))
           return
 
         const relative = path.relative(path.dirname(exitpoint), url.pathname)
@@ -199,6 +206,8 @@ export class Glace {
         if (url.protocol !== "file:")
           return
         if (path.relative(this.entryrootdir, url.pathname).startsWith(".."))
+          return
+        if (!existsSync(url.pathname))
           return
 
         const data = await readFile(url.pathname)
