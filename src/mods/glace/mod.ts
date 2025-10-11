@@ -238,6 +238,22 @@ export class Glace {
         return
       }).bind(this)
 
+      // deno-lint-ignore require-yield
+      const bundleAsManifestLink = (async function* (this: Glace, link: HTMLLinkElement) {
+        const url = new URL(link.href)
+
+        if (url.protocol !== "file:")
+          return
+        if (path.relative(this.entryrootdir, url.pathname).startsWith(".."))
+          return
+        if (!existsSync(url.pathname))
+          return
+
+        link.href = "data:application/manifest+json;base64," + await readFile(url.pathname, "base64")
+
+        return
+      }).bind(this)
+
       const bundles = new Array<AsyncGenerator<void, void, unknown>>()
 
       for (const script of document.querySelectorAll("script"))
@@ -250,6 +266,8 @@ export class Glace {
         bundles.push(bundleAsPreloadLink(link as unknown as HTMLLinkElement))
       for (const link of document.querySelectorAll("link[rel=modulepreload]"))
         bundles.push(bundleAsModulepreloadLink(link as unknown as HTMLLinkElement))
+      for (const link of document.querySelectorAll("link[rel=manifest]"))
+        bundles.push(bundleAsManifestLink(link as unknown as HTMLLinkElement))
 
       await Promise.all(bundles.map(g => g.next()))
 
