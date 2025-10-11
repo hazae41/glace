@@ -37,6 +37,7 @@ export class Glace {
 
     const bundleAsHtml = (async function* (this: Glace, entrypoint: string) {
       const exitpoint = path.resolve(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))
+      const exitpointdir = path.dirname(exitpoint)
 
       const window = new Window({ url: "file://" + entrypoint });
       const document = new window.DOMParser().parseFromString(await readFile(entrypoint, "utf8"), "text/html")
@@ -58,13 +59,8 @@ export class Glace {
 
           yield
 
-          script.src = redot(path.relative(path.dirname(exitpoint), client))
-          script.integrity = this.client.integrity[client]
-
-          const directory = path.dirname(exitpoint)
-
           for (const imported of this.client.importeds[client]) {
-            const relative = redot(path.relative(directory, imported))
+            const relative = redot(path.relative(exitpointdir, imported))
 
             integrity[relative] = this.client.integrity[imported]
 
@@ -78,9 +74,12 @@ export class Glace {
             document.head.prepend(link)
           }
 
-          const relative = redot(path.relative(directory, client))
+          const relative = redot(path.relative(exitpointdir, client))
 
           integrity[relative] = this.client.integrity[client]
+
+          script.src = relative
+          script.integrity = this.client.integrity[client]
 
           const link = document.createElement("link")
 
@@ -111,13 +110,8 @@ export class Glace {
 
           yield
 
-          script.textContent = await readFile(client, "utf8")
-          script.integrity = this.client.integrity[client]
-
-          const directory = path.dirname(exitpoint)
-
           for (const imported of this.client.importeds[client]) {
-            const relative = redot(path.relative(directory, imported))
+            const relative = redot(path.relative(exitpointdir, imported))
 
             integrity[relative] = this.client.integrity[imported]
 
@@ -130,6 +124,9 @@ export class Glace {
 
             document.head.prepend(link)
           }
+
+          script.textContent = await readFile(client, "utf8")
+          script.integrity = this.client.integrity[client]
 
           await rm(client, { force: true })
 
@@ -155,6 +152,26 @@ export class Glace {
         }
       }).bind(this)
 
+      const bundleAsStyle = (async function* (this: Glace, style: HTMLStyleElement) {
+        await using stack = new AsyncDisposableStack()
+
+        const dummy = path.join(path.dirname(entrypoint), `./.${crypto.randomUUID().slice(0, 8)}.css`)
+
+        await mkdirAndWriteFile(dummy, style.textContent)
+
+        stack.defer(() => rm(dummy, { force: true }))
+
+        const output = this.client.add(dummy)
+
+        yield
+
+        style.textContent = `\n    ${await readFile(output, "utf8").then(x => x.trim())}\n  `
+
+        await rm(output, { force: true })
+
+        return
+      }).bind(this)
+
       const bundleAsStylesheetLink = (async function* (this: Glace, link: HTMLLinkElement) {
         const url = new URL(link.href)
 
@@ -176,7 +193,6 @@ export class Glace {
         return
       }).bind(this)
 
-      // deno-lint-ignore require-yield
       const bundleAsModulepreloadLink = (async function* (this: Glace, link: HTMLLinkElement) {
         const url = new URL(link.href)
 
@@ -187,14 +203,32 @@ export class Glace {
         if (!existsSync(url.pathname))
           return
 
-        const relative = path.relative(path.dirname(exitpoint), url.pathname)
+        const client = this.client.add(url.pathname)
 
-        const data = await readFile(url.pathname)
-        const hash = crypto.createHash("sha256").update(data).digest("base64")
+        yield
 
-        link.setAttribute("integrity", `sha256-${hash}`)
+        for (const imported of this.client.importeds[client]) {
+          const relative = redot(path.relative(exitpointdir, imported))
 
-        integrity[relative] = `sha256-${hash}`
+          integrity[relative] = this.client.integrity[imported]
+
+          const link = document.createElement("link")
+
+          link.rel = "modulepreload"
+          link.href = relative
+
+          link.setAttribute("integrity", this.client.integrity[imported])
+
+          document.head.prepend(link)
+        }
+
+        const relative = redot(path.relative(exitpointdir, client))
+
+        integrity[relative] = this.client.integrity[client]
+
+        link.href = relative
+
+        link.setAttribute("integrity", this.client.integrity[client])
 
         return
       }).bind(this)
@@ -214,26 +248,6 @@ export class Glace {
         const hash = crypto.createHash("sha256").update(data).digest("base64")
 
         link.setAttribute("integrity", `sha256-${hash}`)
-
-        return
-      }).bind(this)
-
-      const bundleAsStyle = (async function* (this: Glace, style: HTMLStyleElement) {
-        await using stack = new AsyncDisposableStack()
-
-        const dummy = path.join(path.dirname(entrypoint), `./.${crypto.randomUUID().slice(0, 8)}.css`)
-
-        await mkdirAndWriteFile(dummy, style.textContent)
-
-        stack.defer(() => rm(dummy, { force: true }))
-
-        const output = this.client.add(dummy)
-
-        yield
-
-        style.textContent = `\n    ${await readFile(output, "utf8").then(x => x.trim())}\n  `
-
-        await rm(output, { force: true })
 
         return
       }).bind(this)
