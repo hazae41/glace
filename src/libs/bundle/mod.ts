@@ -57,7 +57,6 @@ export class Builder {
       bundle: true,
       format: "esm",
       metafile: true,
-      splitting: true,
       entryPoints: inputs,
       platform: this.platform,
       outdir: this.exitrootdir,
