@@ -372,7 +372,12 @@ export class Glace {
       if (stats.isDirectory())
         continue
 
-      manifestAsJson.files.push({ src: "/" + relative })
+      const data = await readFile(absolute)
+      const hash = crypto.createHash("sha256").update(data).digest()
+
+      const integrity = `sha256-${hash.toString("base64")}`
+
+      manifestAsJson.files.push({ src: "/" + relative, integrity })
 
       const extname = path.extname(absolute)
       const rawname = path.basename(absolute, extname)
@@ -380,15 +385,12 @@ export class Glace {
       if (rawname.endsWith(".latest")) {
         const name = path.basename(rawname, ".latest")
 
-        const data = await readFile(absolute)
-        const hash = crypto.createHash("sha256").update(data).digest()
-
         const vrelative = path.join(path.dirname(relative), `./${name}.${hash.toString("hex").slice(0, 6)}` + extname)
         const vabsolute = path.resolve(this.exitrootdir, vrelative)
 
         await mkdirAndWriteFile(vabsolute, data)
 
-        manifestAsJson.files.push({ src: "/" + vrelative })
+        manifestAsJson.files.push({ src: "/" + vrelative, integrity })
 
         continue
       }
