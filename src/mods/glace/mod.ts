@@ -252,22 +252,6 @@ export class Glace {
         return
       }).bind(this)
 
-      // deno-lint-ignore require-yield
-      const bundleAsManifestLink = (async function* (this: Glace, link: HTMLLinkElement) {
-        const url = new URL(link.href)
-
-        if (url.protocol !== "file:")
-          return
-        if (path.relative(this.entryrootdir, url.pathname).startsWith(".."))
-          return
-        if (!existsSync(url.pathname))
-          return
-
-        link.href = "data:application/manifest+json;base64," + await readFile(url.pathname, "base64")
-
-        return
-      }).bind(this)
-
       const bundles = new Array<AsyncGenerator<void, void, unknown>>()
 
       for (const script of document.querySelectorAll("script"))
@@ -280,8 +264,6 @@ export class Glace {
         bundles.push(bundleAsPreloadLink(link as unknown as HTMLLinkElement))
       for (const link of document.querySelectorAll("link[rel=modulepreload]"))
         bundles.push(bundleAsModulepreloadLink(link as unknown as HTMLLinkElement))
-      for (const link of document.querySelectorAll("link[rel=manifest]"))
-        bundles.push(bundleAsManifestLink(link as unknown as HTMLLinkElement))
 
       await Promise.all(bundles.map(g => g.next()))
 
@@ -390,12 +372,7 @@ export class Glace {
       if (stats.isDirectory())
         continue
 
-      const data = await readFile(absolute)
-      const hash = crypto.createHash("sha256").update(data).digest()
-
-      const integrity = `sha256-${hash.toString("base64")}`
-
-      manifestAsJson.files.push({ src: "/" + relative, integrity })
+      manifestAsJson.files.push({ src: "/" + relative })
 
       const extname = path.extname(absolute)
       const rawname = path.basename(absolute, extname)
@@ -403,12 +380,15 @@ export class Glace {
       if (rawname.endsWith(".latest")) {
         const name = path.basename(rawname, ".latest")
 
+        const data = await readFile(absolute)
+        const hash = crypto.createHash("sha256").update(data).digest()
+
         const vrelative = path.join(path.dirname(relative), `./${name}.${hash.toString("hex").slice(0, 6)}` + extname)
         const vabsolute = path.resolve(this.exitrootdir, vrelative)
 
         await mkdirAndWriteFile(vabsolute, data)
 
-        manifestAsJson.files.push({ src: "/" + vrelative, integrity })
+        manifestAsJson.files.push({ src: "/" + vrelative })
 
         continue
       }
