@@ -18,9 +18,7 @@ class ContextAndItsInputs {
 export class Builder {
 
   readonly inputs = new Set<string>()
-
-  importeds: Record<string, string[]> = {}
-  integrity: Record<string, string> = {}
+  readonly hashes = new Map<string, string>()
 
   #current: Nullable<ContextAndItsInputs>
 
@@ -44,6 +42,7 @@ export class Builder {
 
   clear() {
     this.inputs.clear()
+    this.hashes.clear()
   }
 
   async #compute() {
@@ -56,7 +55,6 @@ export class Builder {
       write: false,
       bundle: true,
       format: "esm",
-      metafile: true,
       entryPoints: inputs,
       platform: this.platform,
       outdir: this.exitrootdir,
@@ -92,39 +90,14 @@ export class Builder {
     if (result.outputFiles == null)
       throw new Error("No output files")
 
-    this.importeds = {}
-    this.integrity = {}
-
-    const gather = (relative: string, importeds: string[] = []) => {
-      const metadata = result.metafile!.outputs[relative]
-
-      if (metadata == null)
-        return
-
-      importeds.push(relative)
-
-      for (const imported of metadata.imports)
-        gather(imported.path, importeds)
-
-      return
-    }
-
     for (const output of result.outputFiles) {
-      const relative = path.relative(process.cwd(), output.path)
-      const metadata = result.metafile!.outputs[relative]!
-
-      const importeds: string[] = []
-
-      for (const imported of metadata.imports)
-        gather(imported.path, importeds)
-
-      this.importeds[relative] = importeds
-
       await mkdirAndWriteFile(output.path, output.text)
+
+      const relative = path.relative(process.cwd(), output.path)
 
       const hash = crypto.createHash("sha256").update(output.contents).digest()
 
-      this.integrity[relative] = `sha256-${hash.toString("base64")}`
+      this.hashes.set(relative, `sha256-${hash.toString("base64")}`)
 
       continue
     }

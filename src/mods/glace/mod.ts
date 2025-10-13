@@ -59,34 +59,19 @@ export class Glace {
 
           yield
 
-          for (const imported of this.client.importeds[client]) {
-            const relative = redot(path.relative(exitpointdir, imported))
-
-            integrity[relative] = this.client.integrity[imported]
-
-            const link = document.createElement("link")
-
-            link.rel = "modulepreload"
-            link.href = relative
-
-            link.setAttribute("integrity", this.client.integrity[imported])
-
-            document.head.prepend(link)
-          }
-
           const relative = redot(path.relative(exitpointdir, client))
 
-          integrity[relative] = this.client.integrity[client]
+          integrity[relative] = this.client.hashes.get(client)!
 
           script.src = relative
-          script.integrity = this.client.integrity[client]
+          script.integrity = this.client.hashes.get(client)!
 
           const link = document.createElement("link")
 
           link.rel = "modulepreload"
           link.href = relative
 
-          link.setAttribute("integrity", this.client.integrity[client])
+          link.setAttribute("integrity", this.client.hashes.get(client)!)
 
           document.head.prepend(link)
 
@@ -110,23 +95,8 @@ export class Glace {
 
           yield
 
-          for (const imported of this.client.importeds[client]) {
-            const relative = redot(path.relative(exitpointdir, imported))
-
-            integrity[relative] = this.client.integrity[imported]
-
-            const link = document.createElement("link")
-
-            link.rel = "modulepreload"
-            link.href = relative
-
-            link.setAttribute("integrity", this.client.integrity[imported])
-
-            document.head.prepend(link)
-          }
-
           script.textContent = await readFile(client, "utf8")
-          script.integrity = this.client.integrity[client]
+          script.integrity = this.client.hashes.get(client)!
 
           await rm(client, { force: true })
 
@@ -188,7 +158,7 @@ export class Glace {
 
         link.href = redot(path.relative(path.dirname(exitpoint), client))
 
-        link.setAttribute("integrity", this.client.integrity[client])
+        link.setAttribute("integrity", this.client.hashes.get(client)!)
 
         return
       }).bind(this)
@@ -207,28 +177,13 @@ export class Glace {
 
         yield
 
-        for (const imported of this.client.importeds[client]) {
-          const relative = redot(path.relative(exitpointdir, imported))
-
-          integrity[relative] = this.client.integrity[imported]
-
-          const link = document.createElement("link")
-
-          link.rel = "modulepreload"
-          link.href = relative
-
-          link.setAttribute("integrity", this.client.integrity[imported])
-
-          document.head.prepend(link)
-        }
-
         const relative = redot(path.relative(exitpointdir, client))
 
-        integrity[relative] = this.client.integrity[client]
+        integrity[relative] = this.client.hashes.get(client)!
 
         link.href = relative
 
-        link.setAttribute("integrity", this.client.integrity[client])
+        link.setAttribute("integrity", this.client.hashes.get(client)!)
 
         return
       }).bind(this)
