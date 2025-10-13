@@ -91,9 +91,9 @@ export class Builder {
       throw new Error("No output files")
 
     for (const output of result.outputFiles) {
-      await mkdirAndWriteFile(output.path, output.text)
-
       const relative = path.relative(process.cwd(), output.path)
+
+      await mkdirAndWriteFile(output.path, output.text)
 
       const hash = crypto.createHash("sha256").update(output.contents).digest()
 
