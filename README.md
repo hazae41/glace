@@ -142,7 +142,9 @@ Note that in the preimage, `FINAL_HTML_HASH` is replaced by `DUMMY_HTML_HASH`, a
 <head>
   <title>Example</title>
   <script type="module">
-    document.body.innerHTML = `<div>${Date.now()}</div>`
+    if (process.env.PLATFORM !== "browser") 
+      document.body.innerHTML = `<div>${Date.now()}</div>`
+    }
   </script>
 </head>
 
@@ -176,7 +178,7 @@ Will output
 
 <head>
   <title>Example</title>
-  <script type="module" target="static,client">
+  <script type="module">
     document.body.innerHTML = `<div>${Date.now()}</div>`
   </script>
 </head>
@@ -218,8 +220,8 @@ npm i react react-dom @types/react @types/react-dom @hazae41/rewind
 
 <head>
   <title>Example</title>
-  <script type="module" target="client,static" src="./index.tsx"></script>
-  <link rel="stylesheet" target data-rewind href="./index.css" />
+  <script type="module" src="./index.tsx"></script>
+  <link rel="stylesheet" data-rewind href="./index.css" />
 </head>
 
 </html>
