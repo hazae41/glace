@@ -62,37 +62,25 @@ Those files will be bundled for the client unless explicitly ignored (see previo
 
 ### HTML files
 
-#### Choose what you bundle
+#### Scripts
 
-The content of HTML files can be bundled with a `target` attribute:
-
-- Put `target="client"` on a `<link>` or `<style>` to enable bundling and rewriting its path if any
+Any `<script>` will be bundled and then executed with the HTML file set for `document` and `location`
 
 ```html
- <link rel="stylesheet" target="client" href="./index.css" />
-```
-
-```html
-<style target="client">
-  @import "tailwindcss/index";
-</style>
-```
-
-- Put `target` on a `<script>` tag with a value containing any of "client" or "static" separated by a comma
-  - "client" will bundle it and then include it in the output and then rewrite its path in the HTML file
-  - "static" will bundle it and then execute it with the HTML file set for `document` and `location`
-
-```html
-<script type="module" target="client,static" src="./app/index.tsx">
-```
-
-```html
-<script type="module" target="client" src="./polyfill.tsx">
-```
-
-```html
-<script type="module" target="static">
+<script type="module">
   document.body.innerHTML = `<div>Built at ${Date.now()}</div>`
+</script>
+```
+
+You can branch on browser or static execution
+
+```html
+<script type="module">
+  if (process.env.PLATFORM === "browser") {
+    console.log("Hello from browser")
+  } else {
+    console.log("Hello from bundler")
+  }
 </script>
 ```
 
@@ -101,17 +89,23 @@ The content of HTML files can be bundled with a `target` attribute:
 All scripts, whether inline or external, will have their `integrity` attribute automatically computed. 
 
 ```html
-<script type="module" target="client" src="./index.tsx"></script>
+<script type="module" src="./index.tsx"></script>
 ```
 
 ```html
 <script type="module" src="./index.js" integrity="sha256-xP+cym0GRdm2J0F0v39EBGjOtHbuY8qEHoeQrqrhgcs="></script>
 ```
 
-Moreover, an importmap is automatically generated with the integrity of all outputted .js files (e.g. chunks, workers)
+External scripts will also be included in a `modulepreload` link
 
 ```html
-<script type="importmap">{"integrity":{"/index.js":"sha256-xP+cym0GRdm2J0F0v39EBGjOtHbuY8qEHoeQrqrhgcs=","/service_worker.js":"sha256-Lnrs8BAKnjWte5DifbIEuABRsZY2ix6ClaTYss+Vhts=","/test/index.js":"sha256-aRtC2rK+KjZEEHGIDwnBfLrO/ZEEcSEwk3wAz5OJwNA=","/chunk-3GYCOXJL.js":"sha256-HqdhxMkux1ZsOr56B2Y9arLdLWzgxuAc1Zqp1N6nHqk=","/chunk-EK7ODJWE.js":"sha256-BrG/ObfO4bPHfbRbXc0Ae1ta8swysqljhje6epAGQ2w="}}</script>
+<link rel="modulepreload" href="./index.js" integrity="sha256-xP+cym0GRdm2J0F0v39EBGjOtHbuY8qEHoeQrqrhgcs=" />
+```
+
+And an importmap will be generated with the integrity of external scripts
+
+```html
+<script type="importmap">{"integrity":{"./index.js":"sha256-xP+cym0GRdm2J0F0v39EBGjOtHbuY8qEHoeQrqrhgcs="}}</script>
 ```
 
 #### Final hash injection
@@ -119,15 +113,17 @@ Moreover, an importmap is automatically generated with the integrity of all outp
 You can put `FINAL_HTML_HASH` into any inline script to replace it by the Base64-encoded SHA-256 hash of the final HTML file
 
 ```html
-<script type="module" target="client" id="main">
-  console.log("expected", "FINAL_HTML_HASH")
+<script type="module" id="main">
+  if (process.env.PLATFORM === "browser") {
+    console.log("expected", "FINAL_HTML_HASH")
 
-  main.integrity = "sha256-taLJYlBhI2bqJy/6xtl0Sq9LRarNlqp8/Lkx7jtVglk="
+    main.integrity = "sha256-taLJYlBhI2bqJy/6xtl0Sq9LRarNlqp8/Lkx7jtVglk="
 
-  const dummy = new XMLSerializer().serializeToString(document).replaceAll("FINAL_HTML_HASH", "DUMMY_HTML_HASH")
-  const shaed = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(dummy))).toBase64()
+    const dummy = new XMLSerializer().serializeToString(document).replaceAll("FINAL_HTML_HASH", "DUMMY_HTML_HASH")
+    const shaed = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(dummy))).toBase64()
 
-  console.log("computed", `sha256-${shaed}`)
+    console.log("computed", `sha256-${shaed}`)
+  }
 </script>
 ```
 
@@ -145,7 +141,7 @@ Note that in the preimage, `FINAL_HTML_HASH` is replaced by `DUMMY_HTML_HASH`, a
 
 <head>
   <title>Example</title>
-  <script type="module" target="static">
+  <script type="module">
     document.body.innerHTML = `<div>${Date.now()}</div>`
   </script>
 </head>
