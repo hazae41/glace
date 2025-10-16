@@ -17,8 +17,8 @@ class ContextAndItsInputs {
 
 export class Builder {
 
-  readonly inputs = new Set<string>()
-  readonly hashes = new Map<string, string>()
+  readonly inputs: Set<string> = new Set()
+  readonly hashes: Map<string, string> = new Map()
 
   #current: Nullable<ContextAndItsInputs>
 
