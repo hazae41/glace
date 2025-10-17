@@ -37,6 +37,8 @@ export class Glace {
 
     const bundleAsHtml = (async function* (this: Glace, entrypoint: string) {
       const exitpoint = path.resolve(path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint)))
+
+      const entrypointdir = path.dirname(entrypoint)
       const exitpointdir = path.dirname(exitpoint)
 
       const window = new Window({ url: "file://" + entrypoint });
@@ -85,7 +87,7 @@ export class Glace {
         } else {
           await using stack = new AsyncDisposableStack()
 
-          const dummy = path.resolve(path.join(path.dirname(entrypoint), `./.${crypto.randomUUID().slice(0, 8)}.js`))
+          const dummy = path.resolve(path.join(entrypointdir, `./.${crypto.randomUUID().slice(0, 8)}.js`))
 
           await mkdirAndWriteFile(dummy, script.textContent)
 
@@ -125,7 +127,7 @@ export class Glace {
       const bundleAsStyle = (async function* (this: Glace, style: HTMLStyleElement) {
         await using stack = new AsyncDisposableStack()
 
-        const dummy = path.resolve(path.join(path.dirname(entrypoint), `./.${crypto.randomUUID().slice(0, 8)}.css`))
+        const dummy = path.resolve(path.join(entrypointdir, `./.${crypto.randomUUID().slice(0, 8)}.css`))
 
         await mkdirAndWriteFile(dummy, style.textContent)
 
@@ -156,7 +158,7 @@ export class Glace {
 
         yield
 
-        link.href = redot(path.relative(path.dirname(exitpoint), client))
+        link.href = redot(path.relative(exitpointdir, client))
 
         link.setAttribute("integrity", this.client.hashes.get(client)!)
 
