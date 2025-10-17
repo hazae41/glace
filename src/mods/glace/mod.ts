@@ -340,17 +340,16 @@ export class Glace {
       manifestAsJson.files.push({ src: "/" + relative, integrity: `sha256-${hash.toString("base64")}` })
     }
 
-    const manifestAsText = JSON.stringify(manifestAsJson, null, 2)
-    const manifestAsHash = crypto.createHash("sha256").update(manifestAsText).digest("base64")
-
     if (serviceWorkerAsPath != null) {
+      const files = JSON.stringify(manifestAsJson.files.map(({ src, integrity }: { src: string; integrity: string }) => [src, integrity]))
+
       const original = await readFile(serviceWorkerAsPath, "utf8")
-      const replaced = original.replaceAll("MANIFEST_HASH", `sha256-${manifestAsHash}`)
+      const replaced = original.replaceAll("FILES", files)
 
       await mkdirAndWriteFile(serviceWorkerAsPath, replaced)
     }
 
-    await mkdirAndWriteFile(manifestAsPath, manifestAsText)
+    await mkdirAndWriteFile(manifestAsPath, JSON.stringify(manifestAsJson, null, 2))
 
     console.log(`Built in ${Math.round(performance.now() - start)}ms`)
   }
