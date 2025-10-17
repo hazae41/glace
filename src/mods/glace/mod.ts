@@ -36,7 +36,7 @@ export class Glace {
     const mutex = new Mutex(undefined)
 
     const bundleAsHtml = (async function* (this: Glace, entrypoint: string) {
-      const exitpoint = path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))
+      const exitpoint = path.resolve(path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint)))
       const exitpointdir = path.dirname(exitpoint)
 
       const window = new Window({ url: "file://" + entrypoint });
@@ -85,7 +85,7 @@ export class Glace {
         } else {
           await using stack = new AsyncDisposableStack()
 
-          const dummy = path.join(path.dirname(entrypoint), `./.${crypto.randomUUID().slice(0, 8)}.js`)
+          const dummy = path.resolve(path.join(path.dirname(entrypoint), `./.${crypto.randomUUID().slice(0, 8)}.js`))
 
           await mkdirAndWriteFile(dummy, script.textContent)
 
@@ -125,7 +125,7 @@ export class Glace {
       const bundleAsStyle = (async function* (this: Glace, style: HTMLStyleElement) {
         await using stack = new AsyncDisposableStack()
 
-        const dummy = path.join(path.dirname(entrypoint), `./.${crypto.randomUUID().slice(0, 8)}.css`)
+        const dummy = path.resolve(path.join(path.dirname(entrypoint), `./.${crypto.randomUUID().slice(0, 8)}.css`))
 
         await mkdirAndWriteFile(dummy, style.textContent)
 
@@ -268,10 +268,10 @@ export class Glace {
 
     const bundles = new Array<AsyncGenerator<void, void, unknown>>()
 
-    const exclude = await readFileAsListOrEmpty(path.join(this.entryrootdir, "./.bundleignore"))
+    const exclude = await readFileAsListOrEmpty(path.resolve(path.join(this.entryrootdir, "./.bundleignore")))
 
     for await (const relative of glob("**/*", { cwd: this.entryrootdir, exclude })) {
-      const absolute = path.join(this.entryrootdir, relative)
+      const absolute = path.resolve(path.join(this.entryrootdir, relative))
 
       const stats = await stat(absolute)
 
@@ -288,18 +288,18 @@ export class Glace {
         continue
       }
 
-      touches.push(readFile(absolute).then(x => mkdirAndWriteFile(path.join(this.exitrootdir, relative), x)))
+      touches.push(readFile(absolute).then(x => mkdirAndWriteFile(path.resolve(path.join(this.exitrootdir, relative)), x)))
     }
 
     for await (const relative of glob(exclude, { cwd: this.entryrootdir })) {
-      const absolute = path.join(this.entryrootdir, relative)
+      const absolute = path.resolve(path.join(this.entryrootdir, relative))
 
       const stats = await stat(absolute)
 
       if (stats.isDirectory())
         continue
 
-      touches.push(readFile(absolute).then(x => mkdirAndWriteFile(path.join(this.exitrootdir, relative), x)))
+      touches.push(readFile(absolute).then(x => mkdirAndWriteFile(path.resolve(path.join(this.exitrootdir, relative)), x)))
     }
 
     await Promise.all(touches)
@@ -314,17 +314,17 @@ export class Glace {
 
     while (await Promise.all(bundles.map(g => g.next())).then(a => a.some(x => !x.done)));
 
-    const manifestAsPath = path.join(this.exitrootdir, "./manifest.json")
+    const manifestAsPath = path.resolve(path.join(this.exitrootdir, "./manifest.json"))
     const manifestAsJson = await readFile(manifestAsPath, "utf8").then(x => JSON.parse(x)).catch(() => ({}))
 
     const serviceWorkerAsPath = manifestAsJson.background?.service_worker != null
-      ? path.join(this.exitrootdir, manifestAsJson.background.service_worker)
-      : path.join(this.exitrootdir, "/service.worker.js")
+      ? path.resolve(path.join(this.exitrootdir, manifestAsJson.background.service_worker))
+      : path.resolve(path.join(this.exitrootdir, "/service.worker.js"))
 
     manifestAsJson.files = []
 
     for await (const relative of glob("**/*", { cwd: this.exitrootdir, exclude })) {
-      const absolute = path.join(this.exitrootdir, relative)
+      const absolute = path.resolve(path.join(this.exitrootdir, relative))
 
       if (absolute === serviceWorkerAsPath)
         continue
