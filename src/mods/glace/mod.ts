@@ -36,7 +36,7 @@ export class Glace {
     const mutex = new Mutex(undefined)
 
     const bundleAsHtml = (async function* (this: Glace, entrypoint: string) {
-      const exitpoint = path.resolve(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))
+      const exitpoint = path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))
       const exitpointdir = path.dirname(exitpoint)
 
       const window = new Window({ url: "file://" + entrypoint });
@@ -271,7 +271,7 @@ export class Glace {
     const exclude = await readFileAsListOrEmpty(path.join(this.entryrootdir, "./.bundleignore"))
 
     for await (const relative of glob("**/*", { cwd: this.entryrootdir, exclude })) {
-      const absolute = path.resolve(this.entryrootdir, relative)
+      const absolute = path.join(this.entryrootdir, relative)
 
       const stats = await stat(absolute)
 
@@ -292,7 +292,7 @@ export class Glace {
     }
 
     for await (const relative of glob(exclude, { cwd: this.entryrootdir })) {
-      const absolute = path.resolve(this.entryrootdir, relative)
+      const absolute = path.join(this.entryrootdir, relative)
 
       const stats = await stat(absolute)
 
@@ -317,23 +317,40 @@ export class Glace {
     const manifestAsPath = path.join(this.exitrootdir, "./manifest.json")
     const manifestAsJson = await readFile(manifestAsPath, "utf8").then(x => JSON.parse(x)).catch(() => ({}))
 
+    const serviceWorkerAsPath = manifestAsJson.background?.service_worker != null
+      ? path.join(this.exitrootdir, manifestAsJson.background.service_worker)
+      : path.join(this.exitrootdir, "/service.worker.js")
+
     manifestAsJson.files = []
 
     for await (const relative of glob("**/*", { cwd: this.exitrootdir, exclude })) {
-      const absolute = path.resolve(this.exitrootdir, relative)
+      const absolute = path.join(this.exitrootdir, relative)
+
+      if (absolute === serviceWorkerAsPath)
+        continue
 
       const stats = await stat(absolute)
 
       if (stats.isDirectory())
         continue
 
-      const data = await readFile(absolute)
+      const data = await readFile(absolute, "utf8")
       const hash = crypto.createHash("sha256").update(data).digest()
 
       manifestAsJson.files.push({ src: "/" + relative, integrity: `sha256-${hash.toString("base64")}` })
     }
 
-    await mkdirAndWriteFile(manifestAsPath, JSON.stringify(manifestAsJson, null, 2))
+    const manifestAsText = JSON.stringify(manifestAsJson, null, 2)
+    const manifestAsHash = crypto.createHash("sha256").update(manifestAsText).digest("base64")
+
+    if (serviceWorkerAsPath != null) {
+      const original = await readFile(serviceWorkerAsPath, "utf8")
+      const replaced = original.replaceAll("MANIFEST_HASH", `sha256-${manifestAsHash}`)
+
+      await mkdirAndWriteFile(serviceWorkerAsPath, replaced)
+    }
+
+    await mkdirAndWriteFile(manifestAsPath, manifestAsText)
 
     console.log(`Built in ${Math.round(performance.now() - start)}ms`)
   }
