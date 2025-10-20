@@ -3,9 +3,9 @@
   "version": "1.0.8",
   "imports": {
     "@/": "./src/",
-    "@hazae41/mutex": "jsr:@hazae41/mutex@^3.0.0",
-    "@hazae41/phobos": "jsr:@hazae41/phobos@^2.0.10",
-    "@hazae41/tscousin": "jsr:@hazae41/tscousin@^1.0.23"
+    "@hazae41/mutex": "jsr:@hazae41/mutex@^3.0.1",
+    "@hazae41/phobos": "jsr:@hazae41/phobos@^2.0.16",
+    "@hazae41/tscousin": "jsr:@hazae41/tscousin@^1.0.28"
   },
   "exports": {
     ".": "./src/mod.ts"
