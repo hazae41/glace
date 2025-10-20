@@ -84,7 +84,7 @@ You can branch on browser or static execution
 </script>
 ```
 
-#### Automatic integrity compute
+#### Subresource Integrity
 
 All scripts, whether inline or external, will have their `integrity` attribute automatically computed. 
 
@@ -108,7 +108,7 @@ And an importmap will be generated with the integrity of external scripts
 <script type="importmap">{"integrity":{"./index.js":"sha256-xP+cym0GRdm2J0F0v39EBGjOtHbuY8qEHoeQrqrhgcs="}}</script>
 ```
 
-#### Final hash injection
+#### Self Integrity
 
 You can put `FINAL_HTML_HASH` into any inline script to replace it by the Base64-encoded SHA-256 hash of the final HTML file
 
@@ -128,6 +128,72 @@ You can put `FINAL_HTML_HASH` into any inline script to replace it by the Base64
 ```
 
 Note that in the preimage, `FINAL_HTML_HASH` is replaced by `DUMMY_HTML_HASH`, and the inline script `integrity` attribute is set to `sha256-taLJYlBhI2bqJy/6xtl0Sq9LRarNlqp8/Lkx7jtVglk=` (SHA-256 of `dummy`)
+
+### manifest.json
+
+At the end of the build, all non-hidden files will have their integrity computed and stored into `manifest.json`, except for the service worker (see below)
+
+### Service-worker
+
+If you set `background.service_worker` to an output file path in `manifest.json`, it will be injected by replacing `FILES` by a `[string, string][]` mapping of all files and their integrity
+
+```json
+{
+  "name": "Example",
+  "short_name": "Example",
+  "description": "An example webapp",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "background": {
+    "service_worker": "/service.worker.js"
+  }
+}
+```
+
+You can then use `FILES` to cache all your webapp files
+
+```tsx
+import { immutable } from "@hazae41/immutable"
+
+declare const FILES: [string, string][]
+
+const cache = new immutable.cache.Cache(new Map(FILES))
+
+self.addEventListener("install", (event) => {
+  /**
+   * Precache new version and auto-activate
+   */
+  event.waitUntil(cache.precache().then(() => self.skipWaiting()))
+})
+
+self.addEventListener("activate", (event) => {
+  /**
+   * Take control of all clients and uncache previous versions
+   */
+  event.waitUntil(self.clients.claim().then(() => cache.uncache()))
+})
+
+self.addEventListener("fetch", (event) => {
+  const response = cache.handle(event.request)
+
+  if (response == null)
+    return
+
+  /**
+   * Respond with cache
+   */
+  event.respondWith(response)
+})
+```
 
 ## Examples
 
