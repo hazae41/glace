@@ -252,13 +252,8 @@ export class Glace {
 
       while (await Promise.all(bundles.map(g => g.next())).then(a => a.some(x => !x.done)));
 
-      // @ts-expect-error:
       delete globalThis.window
-
-      // @ts-expect-error:
       delete globalThis.document
-
-      // @ts-expect-error:
       delete globalThis.location
 
       await mkdirAndWriteFile(exitpoint, new window.XMLSerializer().serializeToString(document))
