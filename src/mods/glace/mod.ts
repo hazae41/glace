@@ -318,9 +318,9 @@ export class Glace {
       ? path.resolve(path.join(this.exitrootdir, manifestAsJson.background.service_worker))
       : path.resolve(path.join(this.exitrootdir, "/service.worker.js"))
 
-    manifestAsJson.files = []
+    const files = new Array<[string, string]>()
 
-    for await (const relative of glob("**/*", { cwd: this.exitrootdir, exclude })) {
+    for await (const relative of glob("**/*", { cwd: this.exitrootdir })) {
       const absolute = path.resolve(path.join(this.exitrootdir, relative))
 
       if (absolute === serviceWorkerAsPath)
@@ -334,19 +334,15 @@ export class Glace {
       const data = await readFile(absolute, "utf8")
       const hash = crypto.createHash("sha256").update(data).digest()
 
-      manifestAsJson.files.push({ src: "/" + relative, integrity: `sha256-${hash.toString("base64")}` })
+      files.push(["/" + relative, `sha256-${hash.toString("base64")}`])
     }
 
     if (serviceWorkerAsPath != null) {
-      const files = JSON.stringify(manifestAsJson.files.map(({ src, integrity }: { src: string; integrity: string }) => [src, integrity]))
-
       const original = await readFile(serviceWorkerAsPath, "utf8")
-      const replaced = original.replaceAll("FILES", files)
+      const replaced = original.replaceAll("FILES", JSON.stringify(files))
 
       await mkdirAndWriteFile(serviceWorkerAsPath, replaced)
     }
-
-    await mkdirAndWriteFile(manifestAsPath, JSON.stringify(manifestAsJson, null, 2))
 
     console.log(`Built in ${Math.round(performance.now() - start)}ms`)
   }
