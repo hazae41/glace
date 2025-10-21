@@ -14,14 +14,13 @@ deno install -gfn glace -RW jsr:@hazae41/glace/bin
 
 ## Features
 
+- Built on web standards and fundamentals
 - Works with any client-side and/or static-side library (e.g. React, jQuery)
 - Focused on security and simplicity without degrading performances
 - Supply-chain hardened with the bare minimum dependencies
 - Built for Deno but backward compatible with Node/Bun
 - Deploy it anywhere HTML/CSS/JS files can be stored
 - Builds are cross-platform cross-runtime reproducible
-- (soon) Immutably cached with either manual or automatic updates
-- (soon) Can be integrity checked at runtime using HTTPSec protocol
 
 ## Starters
 
