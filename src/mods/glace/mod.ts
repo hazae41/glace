@@ -28,8 +28,10 @@ export class Glace {
     readonly exitrootdir: string,
     readonly mode: "production" | "development"
   ) {
+    const tmp = path.join(tmpdir(), crypto.randomUUID().slice(0, 8))
+
     this.client = new Builder(this.entryrootdir, this.exitrootdir, "browser", this.mode)
-    this.statxc = new Builder(this.entryrootdir, tmpdir(), "node", this.mode)
+    this.statxc = new Builder(this.entryrootdir, tmp, "node", this.mode)
   }
 
   async build() {
@@ -75,6 +77,8 @@ export class Glace {
 
           const clientexitpoint = deparam(client.path, params)
 
+          await mkdirAndWriteFile(clientexitpoint, client.contents)
+
           const relative = redot(path.relative(exitpointdir, clientexitpoint))
 
           integrity[relative] = client.hash
@@ -96,6 +100,8 @@ export class Glace {
           const statxc = this.statxc.outputs.get(rawstatxcexitpoint)
 
           const statxcexitpoint = deparam(statxc.path, params)
+
+          await mkdirAndWriteFile(statxcexitpoint, statxc.contents)
 
           await import(`file:${statxcexitpoint}#${crypto.randomUUID().slice(0, 8)}`)
 
@@ -170,6 +176,8 @@ export class Glace {
         const client = this.client.outputs.get(rawclientexitpoint)
 
         const clientexitpoint = deparam(client.path, params)
+
+        await mkdirAndWriteFile(clientexitpoint, client.contents)
 
         link.href = redot(path.relative(exitpointdir, clientexitpoint))
 
@@ -268,29 +276,6 @@ export class Glace {
       return
     }).bind(this)
 
-    const bundleAsScript = (async function* (this: Glace, entrypoint: string, params: Record<string, string> = {}) {
-      const rawclientexitpoint = this.client.add(entrypoint)
-      const rawstatxcexitpoint = this.statxc.add(entrypoint)
-
-      yield
-
-      const client = this.client.outputs.get(rawclientexitpoint)
-
-      const clientexitpoint = deparam(client.path, params)
-
-      await mkdirAndWriteFile(clientexitpoint, client.contents)
-
-      yield
-
-      const statxc = this.statxc.outputs.get(rawstatxcexitpoint)
-
-      const statxcexitpoint = deparam(statxc.path, params)
-
-      await mkdirAndWriteFile(statxcexitpoint, statxc.contents)
-
-      return
-    }).bind(this)
-
     const bundleAsOther = (async function* (this: Glace, entrypoint: string, params: Record<string, string> = {}) {
       const rawclientexitpoint = this.client.add(entrypoint)
 
@@ -331,8 +316,8 @@ export class Glace {
           continue
         }
 
-        if (/\.(((c|m)?(t|j)s(x?))|(json)|(css))$/.test(relative)) {
-          bundles.push(bundleAsScript(entrypoint, { locale }))
+        if (/\.((c|m)?(t|j)s(x?))$/.test(relative)) {
+          bundles.push(bundleAsOther(entrypoint, { locale }))
           continue
         }
 
