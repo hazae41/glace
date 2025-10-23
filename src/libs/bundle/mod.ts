@@ -1,26 +1,16 @@
-import esbuild, { type BuildContext, type BuildOptions } from "esbuild";
+import esbuild, { type BuildContext, type BuildOptions, type OutputFile } from "esbuild";
 import crypto from "node:crypto";
 import { builtinModules } from "node:module";
 import path from "node:path";
-import process from "node:process";
-import { mkdirAndWriteFile } from "../fs/mod.ts";
 import type { Nullable } from "../nullable/mod.ts";
-
-class ContextAndItsInputs {
-
-  constructor(
-    readonly context: BuildContext,
-    readonly inputs: Set<string>
-  ) { }
-
-}
 
 export class Builder {
 
   readonly inputs: Set<string> = new Set()
-  readonly hashes: Map<string, string> = new Map()
 
-  #current: Nullable<ContextAndItsInputs>
+  readonly outputs: Map<string, OutputFile> = new Map()
+
+  #context: Nullable<BuildContext>
 
   constructor(
     readonly entryrootdir: string,
@@ -33,23 +23,27 @@ export class Builder {
     const name = path.basename(file, path.extname(file))
 
     const outname = name + (/\.(c|m)?(t|j)s(x?)$/.test(file) ? ".js" : path.extname(file))
-    const outfile = path.join(this.exitrootdir, path.relative(this.entryrootdir, path.dirname(file)), outname)
+    const outfile = path.resolve(path.join(this.exitrootdir, path.relative(this.entryrootdir, path.dirname(file)), outname))
 
     this.inputs.add(file)
+
+    this.#context = null
 
     return outfile
   }
 
   clear() {
+    this.#context = null
+
     this.inputs.clear()
-    this.hashes.clear()
+    this.outputs.clear()
   }
 
   async #compute() {
-    if (this.#current != null && this.inputs.difference(this.#current.inputs).size === 0)
-      return this.#current.context
+    if (this.#context != null)
+      return this.#context
 
-    const inputs = [...this.inputs]
+    const inputs = [...this.inputs.keys()]
 
     const options: BuildOptions = {
       write: false,
@@ -66,11 +60,11 @@ export class Builder {
       banner: this.platform === "node" ? { js: `import { createRequire } from "node:module"; const require = createRequire(import.meta.url);` } : {}
     } as const
 
-    const current = new ContextAndItsInputs(await esbuild.context(options), new Set(this.inputs))
+    const current = await esbuild.context(options)
 
-    this.#current = current
+    this.#context = current
 
-    return current.context
+    return current
   }
 
   async build() {
@@ -91,13 +85,11 @@ export class Builder {
       throw new Error("No output files")
 
     for (const output of result.outputFiles) {
-      const relative = path.relative(process.cwd(), output.path)
-
-      await mkdirAndWriteFile(output.path, output.text)
-
       const hash = crypto.createHash("sha256").update(output.contents).digest()
 
-      this.hashes.set(relative, `sha256-${hash.toString("base64")}`)
+      output.hash = `sha256-${hash.toString("base64")}`
+
+      this.outputs.set(output.path, output)
 
       continue
     }

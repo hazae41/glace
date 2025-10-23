@@ -107,31 +107,6 @@ And an importmap will be generated with the integrity of external scripts
 <script type="importmap">{"integrity":{"./index.js":"sha256-xP+cym0GRdm2J0F0v39EBGjOtHbuY8qEHoeQrqrhgcs="}}</script>
 ```
 
-#### Self Integrity
-
-You can put `FINAL_HTML_HASH` into any inline script to replace it by the Base64-encoded SHA-256 hash of the final HTML file
-
-```html
-<script type="module" id="main">
-  if (process.env.PLATFORM === "browser") {
-    console.log("expected", "FINAL_HTML_HASH")
-
-    main.integrity = "sha256-taLJYlBhI2bqJy/6xtl0Sq9LRarNlqp8/Lkx7jtVglk="
-
-    const dummy = new XMLSerializer().serializeToString(document).replaceAll("FINAL_HTML_HASH", "DUMMY_HTML_HASH")
-    const shaed = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(dummy))).toBase64()
-
-    console.log("computed", `sha256-${shaed}`)
-  }
-</script>
-```
-
-Note that in the preimage, `FINAL_HTML_HASH` is replaced by `DUMMY_HTML_HASH`, and the inline script `integrity` attribute is set to `sha256-taLJYlBhI2bqJy/6xtl0Sq9LRarNlqp8/Lkx7jtVglk=` (SHA-256 of `dummy`)
-
-### manifest.json
-
-At the end of the build, all non-hidden files will have their integrity computed and stored into `manifest.json`, except for the service worker (see below)
-
 ### Service-worker
 
 If you set `background.service_worker` to an output file path in `manifest.json`, it will be injected by replacing `FILES` by a `[string, string][]` mapping of all files and their integrity

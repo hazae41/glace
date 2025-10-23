@@ -9,6 +9,15 @@ import { glob, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+function deparam(path: string, params: Record<string, string>): string {
+  let result = path
+
+  for (const param in params)
+    result = result.replaceAll(`[${param}]`, params[param])
+
+  return result
+}
+
 export class Glace {
 
   readonly client: Builder
@@ -35,8 +44,8 @@ export class Glace {
 
     const mutex = new Mutex(undefined)
 
-    const bundleAsHtml = (async function* (this: Glace, entrypoint: string) {
-      const exitpoint = path.resolve(path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint)))
+    const bundleAsHtml = (async function* (this: Glace, entrypoint: string, params: Record<string, string> = {}) {
+      const exitpoint = deparam(path.resolve(path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))), params)
 
       const entrypointdir = path.dirname(entrypoint)
       const exitpointdir = path.dirname(exitpoint)
@@ -57,31 +66,38 @@ export class Glace {
           if (!existsSync(url.pathname))
             return
 
-          const client = this.client.add(url.pathname)
+          const rawclientexitpoint = this.client.add(url.pathname)
+          const rawstatxcexitpoint = this.statxc.add(url.pathname)
 
           yield
 
-          const relative = redot(path.relative(exitpointdir, client))
+          const client = this.client.outputs.get(rawclientexitpoint)
 
-          integrity[relative] = this.client.hashes.get(client)!
+          const clientexitpoint = deparam(client.path, params)
+
+          const relative = redot(path.relative(exitpointdir, clientexitpoint))
+
+          integrity[relative] = client.hash
 
           script.src = relative
-          script.integrity = this.client.hashes.get(client)!
+          script.integrity = client.hash
 
           const link = document.createElement("link")
 
           link.rel = "modulepreload"
           link.href = relative
 
-          link.setAttribute("integrity", this.client.hashes.get(client)!)
+          link.setAttribute("integrity", client.hash)
 
           document.head.prepend(link)
 
-          const statxc = this.statxc.add(url.pathname)
-
           yield
 
-          await import(`file:${statxc}#${crypto.randomUUID().slice(0, 8)}`)
+          const statxc = this.statxc.outputs.get(rawstatxcexitpoint)
+
+          const statxcexitpoint = deparam(statxc.path, params)
+
+          await import(`file:${statxcexitpoint}#${crypto.randomUUID().slice(0, 8)}`)
 
           return
         } else {
@@ -93,32 +109,25 @@ export class Glace {
 
           stack.defer(() => rm(dummy, { force: true }))
 
-          const client = this.client.add(dummy)
+          const rawclientexitpoint = this.client.add(dummy)
+          const rawstatxcexitpoint = this.statxc.add(dummy)
 
           yield
 
-          script.textContent = await readFile(client, "utf8")
-          script.integrity = this.client.hashes.get(client)!
+          const client = this.client.outputs.get(rawclientexitpoint)
 
-          await rm(client, { force: true })
-
-          const statxc = this.statxc.add(dummy)
+          script.textContent = client.text
+          script.integrity = client.hash
 
           yield
 
-          await import(`file:${statxc}#${crypto.randomUUID().slice(0, 8)}`)
+          const statxc = this.statxc.outputs.get(rawstatxcexitpoint)
 
-          yield
+          const statxcexitpoint = deparam(statxc.path, params)
 
-          if (script.textContent.includes("FINAL_HTML_HASH")) {
-            script.integrity = "sha256-taLJYlBhI2bqJy/6xtl0Sq9LRarNlqp8/Lkx7jtVglk=" // sha256("dummy")
+          await mkdirAndWriteFile(statxcexitpoint, statxc.contents)
 
-            const data = new window.XMLSerializer().serializeToString(document).replaceAll("FINAL_HTML_HASH", "DUMMY_HTML_HASH")
-            const hash = `sha256-${crypto.createHash("sha256").update(data).digest("base64")}`
-
-            script.textContent = script.textContent.replaceAll("FINAL_HTML_HASH", hash)
-            script.integrity = `sha256-${crypto.createHash("sha256").update(script.textContent).digest("base64")}`
-          }
+          await import(`file:${statxcexitpoint}#${crypto.randomUUID().slice(0, 8)}`)
 
           return
         }
@@ -133,13 +142,13 @@ export class Glace {
 
         stack.defer(() => rm(dummy, { force: true }))
 
-        const output = this.client.add(dummy)
+        const rawclientexitpoint = this.client.add(dummy)
 
         yield
 
-        style.textContent = `\n    ${await readFile(output, "utf8").then(x => x.trim())}\n  `
+        const client = this.client.outputs.get(rawclientexitpoint)
 
-        await rm(output, { force: true })
+        style.textContent = `\n    ${client.text.trim()}\n  `
 
         return
       }).bind(this)
@@ -154,17 +163,22 @@ export class Glace {
         if (!existsSync(url.pathname))
           return
 
-        const client = this.client.add(url.pathname)
+        const rawclientexitpoint = this.client.add(url.pathname)
 
         yield
 
-        link.href = redot(path.relative(exitpointdir, client))
+        const client = this.client.outputs.get(rawclientexitpoint)
 
-        link.setAttribute("integrity", this.client.hashes.get(client)!)
+        const clientexitpoint = deparam(client.path, params)
+
+        link.href = redot(path.relative(exitpointdir, clientexitpoint))
+
+        link.setAttribute("integrity", client.hash)
 
         return
       }).bind(this)
 
+      // deno-lint-ignore require-yield
       const bundleAsModulepreloadLink = (async function* (this: Glace, link: HTMLLinkElement) {
         const url = new URL(link.href)
 
@@ -175,17 +189,10 @@ export class Glace {
         if (!existsSync(url.pathname))
           return
 
-        const client = this.client.add(url.pathname)
+        const data = await readFile(url.pathname)
+        const hash = crypto.createHash("sha256").update(data).digest("base64")
 
-        yield
-
-        const relative = redot(path.relative(exitpointdir, client))
-
-        integrity[relative] = this.client.hashes.get(client)!
-
-        link.href = relative
-
-        link.setAttribute("integrity", this.client.hashes.get(client)!)
+        link.setAttribute("integrity", `sha256-${hash}`)
 
         return
       }).bind(this)
@@ -222,13 +229,13 @@ export class Glace {
       for (const link of document.querySelectorAll("link[rel=modulepreload]"))
         bundles.push(bundleAsModulepreloadLink(link as unknown as HTMLLinkElement))
 
-      await Promise.all(bundles.map(g => g.next()))
+      await Promise.all(bundles.map(g => g.next())) // prepare clients
 
-      yield
+      yield // wait client build
 
-      await Promise.all(bundles.map(g => g.next()))
+      await Promise.all(bundles.map(g => g.next())) // finalize clients and prepare statics
 
-      yield
+      yield // wait static build
 
       const importmap = document.createElement("script")
 
@@ -237,7 +244,7 @@ export class Glace {
 
       document.head.prepend(importmap)
 
-      window.location.href = `file://${exitpoint}`
+      window.location.href = `file://${exitpoint}?${new URLSearchParams(params).toString()}`
 
       using _ = await mutex.lockOrWait()
 
@@ -250,7 +257,7 @@ export class Glace {
       // @ts-expect-error:
       globalThis.location = window.location
 
-      while (await Promise.all(bundles.map(g => g.next())).then(a => a.some(x => !x.done)));
+      while (await Promise.all(bundles.map(g => g.next())).then(a => a.some(x => !x.done))); // finalize statics
 
       delete globalThis.window
       delete globalThis.document
@@ -261,55 +268,105 @@ export class Glace {
       return
     }).bind(this)
 
-    const touches = new Array<Promise<void>>()
+    const bundleAsScript = (async function* (this: Glace, entrypoint: string, params: Record<string, string> = {}) {
+      const rawclientexitpoint = this.client.add(entrypoint)
+      const rawstatxcexitpoint = this.statxc.add(entrypoint)
+
+      yield
+
+      const client = this.client.outputs.get(rawclientexitpoint)
+
+      const clientexitpoint = deparam(client.path, params)
+
+      await mkdirAndWriteFile(clientexitpoint, client.contents)
+
+      yield
+
+      const statxc = this.statxc.outputs.get(rawstatxcexitpoint)
+
+      const statxcexitpoint = deparam(statxc.path, params)
+
+      await mkdirAndWriteFile(statxcexitpoint, statxc.contents)
+
+      return
+    }).bind(this)
+
+    const bundleAsOther = (async function* (this: Glace, entrypoint: string, params: Record<string, string> = {}) {
+      const rawclientexitpoint = this.client.add(entrypoint)
+
+      yield
+
+      const client = this.client.outputs.get(rawclientexitpoint)
+
+      const clientexitpoint = deparam(client.path, params)
+
+      await mkdirAndWriteFile(clientexitpoint, client.contents)
+
+      return
+    }).bind(this)
+
+    const copyAsAsset = (async function* (this: Glace, entrypoint: string, params: Record<string, string> = {}) {
+      const exitpoint = deparam(path.resolve(path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))), params)
+
+      yield
+
+      await mkdirAndWriteFile(exitpoint, await readFile(entrypoint))
+    }).bind(this)
 
     const bundles = new Array<AsyncGenerator<void, void, unknown>>()
 
     const exclude = await readFileAsListOrEmpty(path.resolve(path.join(this.entryrootdir, "./.bundleignore")))
 
     for await (const relative of glob("**/*", { cwd: this.entryrootdir, exclude })) {
-      const absolute = path.resolve(path.join(this.entryrootdir, relative))
+      const entrypoint = path.resolve(path.join(this.entryrootdir, relative))
 
-      const stats = await stat(absolute)
+      const stats = await stat(entrypoint)
 
       if (stats.isDirectory())
         continue
 
-      if (relative.endsWith(".html")) {
-        bundles.push(bundleAsHtml(absolute))
-        continue
-      }
+      for (const locale of ["en", "fr", "es", "de"]) {
+        if (relative.endsWith(".html")) {
+          bundles.push(bundleAsHtml(entrypoint, { locale }))
+          continue
+        }
 
-      if (/\.(((c|m)?(t|j)s(x?))|(json)|(css))$/.test(relative)) {
-        this.client.add(absolute)
-        continue
-      }
+        if (/\.(((c|m)?(t|j)s(x?))|(json)|(css))$/.test(relative)) {
+          bundles.push(bundleAsScript(entrypoint, { locale }))
+          continue
+        }
 
-      touches.push(readFile(absolute).then(x => mkdirAndWriteFile(path.resolve(path.join(this.exitrootdir, relative)), x)))
+        if (/\.((json)|(css))$/.test(relative)) {
+          bundles.push(bundleAsOther(entrypoint, { locale }))
+          continue
+        }
+
+        bundles.push(copyAsAsset(entrypoint, { locale }))
+      }
     }
 
     for await (const relative of glob(exclude, { cwd: this.entryrootdir })) {
-      const absolute = path.resolve(path.join(this.entryrootdir, relative))
+      const entrypoint = path.resolve(path.join(this.entryrootdir, relative))
 
-      const stats = await stat(absolute)
+      const stats = await stat(entrypoint)
 
       if (stats.isDirectory())
         continue
 
-      touches.push(readFile(absolute).then(x => mkdirAndWriteFile(path.resolve(path.join(this.exitrootdir, relative)), x)))
+      for (const locale of ["en", "fr", "es", "de"]) {
+        bundles.push(copyAsAsset(entrypoint, { locale }))
+      }
     }
 
-    await Promise.all(touches)
+    await Promise.all(bundles.map(g => g.next())) // prepare clients
 
-    await Promise.all(bundles.map(g => g.next()))
+    await this.client.build() // build clients
 
-    await this.client.build()
+    await Promise.all(bundles.map(g => g.next())) // finalize clients and prepare statics
 
-    await Promise.all(bundles.map(g => g.next()))
+    await this.statxc.build() // build statics
 
-    await this.statxc.build()
-
-    while (await Promise.all(bundles.map(g => g.next())).then(a => a.some(x => !x.done)));
+    while (await Promise.all(bundles.map(g => g.next())).then(a => a.some(x => !x.done))); // finalize statics
 
     const manifestAsPath = path.resolve(path.join(this.exitrootdir, "./manifest.json"))
     const manifestAsJson = await readFile(manifestAsPath, "utf8").then(x => JSON.parse(x)).catch(() => ({}))
