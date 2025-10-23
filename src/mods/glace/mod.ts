@@ -103,7 +103,22 @@ export class Glace {
 
           await mkdirAndWriteFile(statxcexitpoint, statxc.contents)
 
+          using _ = await mutex.lockOrWait()
+
+          // @ts-expect-error:
+          globalThis.window = window
+
+          // @ts-expect-error:
+          globalThis.document = document
+
+          // @ts-expect-error:
+          globalThis.location = window.location
+
           await import(`file:${statxcexitpoint}#${crypto.randomUUID().slice(0, 8)}`)
+
+          delete globalThis.window
+          delete globalThis.document
+          delete globalThis.location
 
           return
         } else {
@@ -133,7 +148,22 @@ export class Glace {
 
           await mkdirAndWriteFile(statxcexitpoint, statxc.contents)
 
+          using _ = await mutex.lockOrWait()
+
+          // @ts-expect-error:
+          globalThis.window = window
+
+          // @ts-expect-error:
+          globalThis.document = document
+
+          // @ts-expect-error:
+          globalThis.location = window.location
+
           await import(`file:${statxcexitpoint}#${crypto.randomUUID().slice(0, 8)}`)
+
+          delete globalThis.window
+          delete globalThis.document
+          delete globalThis.location
 
           return
         }
@@ -254,22 +284,7 @@ export class Glace {
 
       window.location.href = `file://${exitpoint}?${new URLSearchParams(params).toString()}`
 
-      using _ = await mutex.lockOrWait()
-
-      // @ts-expect-error:
-      globalThis.window = window
-
-      // @ts-expect-error:
-      globalThis.document = document
-
-      // @ts-expect-error:
-      globalThis.location = window.location
-
       while (await Promise.all(bundles.map(g => g.next())).then(a => a.some(x => !x.done))); // finalize statics
-
-      delete globalThis.window
-      delete globalThis.document
-      delete globalThis.location
 
       await mkdirAndWriteFile(exitpoint, new window.XMLSerializer().serializeToString(document))
 
