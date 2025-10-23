@@ -173,6 +173,8 @@ self.addEventListener("fetch", (event) => {
 
 You can generate dynamic paths using brackets and `manifest.json`
 
+All valid parameters will be located in `location` as search params
+
 > ./www/[lang]/index.html
 
 ```html
@@ -182,7 +184,9 @@ You can generate dynamic paths using brackets and `manifest.json`
 <head>
   <title>Example</title>
   <script type="module">
-    document.documentElement.lang = new URLSearchParams(location.search).get("lang")
+    if (process.env.PLATFORM !== "browser") {
+      document.documentElement.lang = new URLSearchParams(location.search).get("lang")
+    }
   </script>
 </head>
 
