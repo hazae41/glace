@@ -1,6 +1,6 @@
 import { Builder } from "@/libs/bundle/mod.ts";
+import { cartese } from "@/libs/cartese/mod.ts";
 import { mkdirAndWriteFileIfNotExists, readFileAsListOrEmpty } from "@/libs/fs/mod.ts";
-import type { Nullable } from "@/libs/nullable/mod.ts";
 import { redot } from "@/libs/redot/mod.ts";
 import { Mutex } from "@hazae41/mutex";
 import { Window, type HTMLLinkElement, type HTMLScriptElement, type HTMLStyleElement } from "happy-dom";
@@ -9,47 +9,6 @@ import { existsSync } from "node:fs";
 import { glob, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-
-function* cartese(target: string, params: Nullable<Record<string, string[]>>): Generator<Record<string, string>> {
-  if (params == null) {
-    yield {}
-    return
-  }
-
-  const entries = Object.entries(params)
-
-  function* recurse(index = 0, current = {}) {
-    const entry = entries[index]
-
-    if (entry == null) {
-      yield current
-      return
-    }
-
-    const [key, options] = entry
-
-    if (!target.includes(`[${key}]`)) {
-      yield* recurse(index + 1, current)
-      return
-    }
-
-    for (const option of options)
-      yield* recurse(index + 1, { ...current, [key]: option })
-
-    return
-  }
-
-  yield* recurse();
-}
-
-function deparam(path: string, params: Record<string, string>): string {
-  let result = path
-
-  for (const param in params)
-    result = result.replaceAll(`[${param}]`, params[param])
-
-  return result
-}
 
 export class Glace {
 
@@ -80,7 +39,7 @@ export class Glace {
     const mutex = new Mutex(undefined)
 
     const bundleAsHtml = (async function* (this: Glace, entrypoint: string, params: Record<string, string> = {}) {
-      const exitpoint = deparam(path.resolve(path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))), params)
+      const exitpoint = cartese.resolve(path.resolve(path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))), params)
 
       const entrypointdir = path.dirname(entrypoint)
       const exitpointdir = path.dirname(exitpoint)
@@ -108,7 +67,7 @@ export class Glace {
 
           const client = this.client.outputs.get(rawclientexitpoint)
 
-          const clientexitpoint = deparam(client.path, params)
+          const clientexitpoint = cartese.resolve(client.path, params)
 
           await mkdirAndWriteFileIfNotExists(clientexitpoint, client.contents)
 
@@ -132,7 +91,7 @@ export class Glace {
 
           const statxc = this.statxc.outputs.get(rawstatxcexitpoint)
 
-          const statxcexitpoint = deparam(statxc.path, params)
+          const statxcexitpoint = cartese.resolve(statxc.path, params)
 
           await mkdirAndWriteFileIfNotExists(statxcexitpoint, statxc.contents)
 
@@ -177,7 +136,7 @@ export class Glace {
 
           const statxc = this.statxc.outputs.get(rawstatxcexitpoint)
 
-          const statxcexitpoint = deparam(statxc.path, params)
+          const statxcexitpoint = cartese.resolve(statxc.path, params)
 
           await mkdirAndWriteFileIfNotExists(statxcexitpoint, statxc.contents)
 
@@ -238,7 +197,7 @@ export class Glace {
 
         const client = this.client.outputs.get(rawclientexitpoint)
 
-        const clientexitpoint = deparam(client.path, params)
+        const clientexitpoint = cartese.resolve(client.path, params)
 
         await mkdirAndWriteFileIfNotExists(clientexitpoint, client.contents)
 
@@ -331,7 +290,7 @@ export class Glace {
 
       const client = this.client.outputs.get(rawclientexitpoint)
 
-      const clientexitpoint = deparam(client.path, params)
+      const clientexitpoint = cartese.resolve(client.path, params)
 
       await mkdirAndWriteFileIfNotExists(clientexitpoint, client.contents)
 
@@ -339,7 +298,7 @@ export class Glace {
     }).bind(this)
 
     const copyAsAsset = (async function* (this: Glace, entrypoint: string, params: Record<string, string> = {}) {
-      const exitpoint = deparam(path.resolve(path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))), params)
+      const exitpoint = cartese.resolve(path.resolve(path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))), params)
 
       yield
 
@@ -361,7 +320,7 @@ export class Glace {
       if (stats.isDirectory())
         continue
 
-      for (const params of cartese(entrypoint, manifest.params)) {
+      for (const params of cartese.generate(entrypoint, manifest.params)) {
         if (relative.endsWith(".html")) {
           bundles.push(bundleAsHtml(entrypoint, params))
           continue
@@ -389,7 +348,7 @@ export class Glace {
       if (stats.isDirectory())
         continue
 
-      for (const params of cartese(entrypoint, manifest.params))
+      for (const params of cartese.generate(entrypoint, manifest.params))
         bundles.push(copyAsAsset(entrypoint, params))
 
       continue
