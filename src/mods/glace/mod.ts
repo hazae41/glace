@@ -9,6 +9,17 @@ import { glob, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+function* param(target: string, params: Record<string, string[]>) {
+  for (const segment of target.split(path.sep)) {
+    for (const param in params) {
+      if (segment !== `[${param}]`)
+        continue
+      for (const value of params[param])
+        yield value
+    }
+  }
+}
+
 function deparam(path: string, params: Record<string, string>): string {
   let result = path
 
