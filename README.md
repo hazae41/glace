@@ -71,7 +71,7 @@ Any `<script>` will be bundled and then executed with the HTML file set for `doc
 </script>
 ```
 
-You can branch on browser or static execution
+You can branch on browser or static execution using `process.env.PLATFORM`
 
 ```html
 <script type="module">
