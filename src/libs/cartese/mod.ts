@@ -34,8 +34,8 @@ export namespace cartese {
     yield* recurse();
   }
 
-  export function resolve(path: string, params: Record<string, string>): string {
-    let result = path
+  export function resolve(target: string, params: Record<string, string>): string {
+    let result = target
 
     for (const param in params)
       result = result.replaceAll(`[${param}]`, params[param])
