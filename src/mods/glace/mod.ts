@@ -320,7 +320,7 @@ export class Glace {
       if (stats.isDirectory())
         continue
 
-      for (const params of cartese.generate(entrypoint, manifest.params)) {
+      for (const params of cartese.generate(entrypoint, manifest.paths)) {
         if (relative.endsWith(".html")) {
           bundles.push(bundleAsHtml(entrypoint, params))
           continue
@@ -348,7 +348,7 @@ export class Glace {
       if (stats.isDirectory())
         continue
 
-      for (const params of cartese.generate(entrypoint, manifest.params))
+      for (const params of cartese.generate(entrypoint, manifest.paths))
         bundles.push(copyAsAsset(entrypoint, params))
 
       continue

@@ -169,6 +169,43 @@ self.addEventListener("fetch", (event) => {
 })
 ```
 
+### Dynamic paths
+
+You can generate dynamic paths using brackets and `manifest.json`
+
+> ./www/[lang]/index.html
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Example</title>
+  <script type="module">
+    document.documentElement.lang = new URLSearchParams(location.search).get("lang")
+  </script>
+</head>
+
+</html>
+```
+
+> ./www/manifest.json
+
+```json
+{
+  "short_name": "Example",
+  "name": "Example",
+  "paths": {
+    "lang": [
+      "en",
+      "fr",
+      "es",
+      "de"
+    ]
+  }
+}
+```
+
 ## Examples
 
 ### A simple HTML file with prerendering
