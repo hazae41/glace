@@ -1,5 +1,6 @@
 import { Builder } from "@/libs/bundle/mod.ts";
 import { mkdirAndWriteFile, readFileAsListOrEmpty } from "@/libs/fs/mod.ts";
+import type { Nullable } from "@/libs/nullable/mod.ts";
 import { redot } from "@/libs/redot/mod.ts";
 import { Mutex } from "@hazae41/mutex";
 import { Window, type HTMLLinkElement, type HTMLScriptElement, type HTMLStyleElement } from "happy-dom";
@@ -9,15 +10,36 @@ import { glob, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-function* param(target: string, params: Record<string, string[]>) {
-  for (const segment of target.split(path.sep)) {
-    for (const param in params) {
-      if (segment !== `[${param}]`)
-        continue
-      for (const value of params[param])
-        yield value
-    }
+function* cartese(target: string, params: Nullable<Record<string, string[]>>): Generator<Record<string, string>> {
+  if (params == null) {
+    yield {}
+    return
   }
+
+  const entries = Object.entries(params)
+
+  function* recurse(index = 0, current = {}) {
+    const entry = entries[index]
+
+    if (entry == null) {
+      yield current
+      return
+    }
+
+    const [key, options] = entry
+
+    if (!target.includes(`[${key}]`)) {
+      yield* recurse(index + 1, current)
+      return
+    }
+
+    for (const option of options)
+      yield* recurse(index + 1, { ...current, [key]: option })
+
+    return
+  }
+
+  yield* recurse();
 }
 
 function deparam(path: string, params: Record<string, string>): string {
@@ -326,6 +348,9 @@ export class Glace {
 
     const bundles = new Array<AsyncGenerator<void, void, unknown>>()
 
+    const manifestentrypoint = path.resolve(path.join(this.entryrootdir, "./manifest.json"))
+    const manifest = await readFile(manifestentrypoint, "utf8").then(x => JSON.parse(x)).catch(() => ({}))
+
     const exclude = await readFileAsListOrEmpty(path.resolve(path.join(this.entryrootdir, "./.bundleignore")))
 
     for await (const relative of glob("**/*", { cwd: this.entryrootdir, exclude })) {
@@ -336,23 +361,23 @@ export class Glace {
       if (stats.isDirectory())
         continue
 
-      for (const locale of ["en", "fr", "es", "de"]) {
+      for (const params of cartese(entrypoint, manifest.params)) {
         if (relative.endsWith(".html")) {
-          bundles.push(bundleAsHtml(entrypoint, { locale }))
+          bundles.push(bundleAsHtml(entrypoint, params))
           continue
         }
 
         if (/\.((c|m)?(t|j)s(x?))$/.test(relative)) {
-          bundles.push(bundleAsOther(entrypoint, { locale }))
+          bundles.push(bundleAsOther(entrypoint, params))
           continue
         }
 
         if (/\.((json)|(css))$/.test(relative)) {
-          bundles.push(bundleAsOther(entrypoint, { locale }))
+          bundles.push(bundleAsOther(entrypoint, params))
           continue
         }
 
-        bundles.push(copyAsAsset(entrypoint, { locale }))
+        bundles.push(copyAsAsset(entrypoint, params))
       }
     }
 
@@ -364,9 +389,10 @@ export class Glace {
       if (stats.isDirectory())
         continue
 
-      for (const locale of ["en", "fr", "es", "de"]) {
-        bundles.push(copyAsAsset(entrypoint, { locale }))
-      }
+      for (const params of cartese(entrypoint, manifest.params))
+        bundles.push(copyAsAsset(entrypoint, params))
+
+      continue
     }
 
     await Promise.all(bundles.map(g => g.next())) // prepare clients
@@ -379,11 +405,8 @@ export class Glace {
 
     while (await Promise.all(bundles.map(g => g.next())).then(a => a.some(x => !x.done))); // finalize statics
 
-    const manifestAsPath = path.resolve(path.join(this.exitrootdir, "./manifest.json"))
-    const manifestAsJson = await readFile(manifestAsPath, "utf8").then(x => JSON.parse(x)).catch(() => ({}))
-
-    const serviceWorkerAsPath = manifestAsJson.background?.service_worker != null
-      ? path.resolve(path.join(this.exitrootdir, manifestAsJson.background.service_worker))
+    const serviceWorkerAsPath = manifest.background?.service_worker != null
+      ? path.resolve(path.join(this.exitrootdir, manifest.background.service_worker))
       : path.resolve(path.join(this.exitrootdir, "/service.worker.js"))
 
     const files = new Array<[string, string]>()
