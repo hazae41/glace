@@ -206,6 +206,13 @@ You can generate dynamic paths using brackets and `manifest.json`
 }
 ```
 
+Will output
+
+> ./www/en/index.html
+> ./www/fr/index.html
+> ./www/es/index.html
+> ./www/de/index.html
+
 ## Examples
 
 ### A simple HTML file with prerendering
