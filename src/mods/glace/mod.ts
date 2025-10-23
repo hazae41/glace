@@ -1,5 +1,5 @@
 import { Builder } from "@/libs/bundle/mod.ts";
-import { mkdirAndWriteFile, readFileAsListOrEmpty } from "@/libs/fs/mod.ts";
+import { mkdirAndWriteFileIfNotExists, readFileAsListOrEmpty } from "@/libs/fs/mod.ts";
 import type { Nullable } from "@/libs/nullable/mod.ts";
 import { redot } from "@/libs/redot/mod.ts";
 import { Mutex } from "@hazae41/mutex";
@@ -110,7 +110,7 @@ export class Glace {
 
           const clientexitpoint = deparam(client.path, params)
 
-          await mkdirAndWriteFile(clientexitpoint, client.contents)
+          await mkdirAndWriteFileIfNotExists(clientexitpoint, client.contents)
 
           const relative = redot(path.relative(exitpointdir, clientexitpoint))
 
@@ -134,7 +134,7 @@ export class Glace {
 
           const statxcexitpoint = deparam(statxc.path, params)
 
-          await mkdirAndWriteFile(statxcexitpoint, statxc.contents)
+          await mkdirAndWriteFileIfNotExists(statxcexitpoint, statxc.contents)
 
           using _ = await mutex.lockOrWait()
 
@@ -159,7 +159,7 @@ export class Glace {
 
           const dummy = path.resolve(path.join(entrypointdir, `./.${crypto.randomUUID().slice(0, 8)}.js`))
 
-          await mkdirAndWriteFile(dummy, script.textContent)
+          await mkdirAndWriteFileIfNotExists(dummy, script.textContent)
 
           stack.defer(() => rm(dummy, { force: true }))
 
@@ -179,7 +179,7 @@ export class Glace {
 
           const statxcexitpoint = deparam(statxc.path, params)
 
-          await mkdirAndWriteFile(statxcexitpoint, statxc.contents)
+          await mkdirAndWriteFileIfNotExists(statxcexitpoint, statxc.contents)
 
           using _ = await mutex.lockOrWait()
 
@@ -207,7 +207,7 @@ export class Glace {
 
         const dummy = path.resolve(path.join(entrypointdir, `./.${crypto.randomUUID().slice(0, 8)}.css`))
 
-        await mkdirAndWriteFile(dummy, style.textContent)
+        await mkdirAndWriteFileIfNotExists(dummy, style.textContent)
 
         stack.defer(() => rm(dummy, { force: true }))
 
@@ -240,7 +240,7 @@ export class Glace {
 
         const clientexitpoint = deparam(client.path, params)
 
-        await mkdirAndWriteFile(clientexitpoint, client.contents)
+        await mkdirAndWriteFileIfNotExists(clientexitpoint, client.contents)
 
         link.href = redot(path.relative(exitpointdir, clientexitpoint))
 
@@ -319,7 +319,7 @@ export class Glace {
 
       while (await Promise.all(bundles.map(g => g.next())).then(a => a.some(x => !x.done))); // finalize statics
 
-      await mkdirAndWriteFile(exitpoint, new window.XMLSerializer().serializeToString(document))
+      await mkdirAndWriteFileIfNotExists(exitpoint, new window.XMLSerializer().serializeToString(document))
 
       return
     }).bind(this)
@@ -333,7 +333,7 @@ export class Glace {
 
       const clientexitpoint = deparam(client.path, params)
 
-      await mkdirAndWriteFile(clientexitpoint, client.contents)
+      await mkdirAndWriteFileIfNotExists(clientexitpoint, client.contents)
 
       return
     }).bind(this)
@@ -343,7 +343,7 @@ export class Glace {
 
       yield
 
-      await mkdirAndWriteFile(exitpoint, await readFile(entrypoint))
+      await mkdirAndWriteFileIfNotExists(exitpoint, await readFile(entrypoint))
     }).bind(this)
 
     const bundles = new Array<AsyncGenerator<void, void, unknown>>()
@@ -405,7 +405,7 @@ export class Glace {
 
     while (await Promise.all(bundles.map(g => g.next())).then(a => a.some(x => !x.done))); // finalize statics
 
-    const serviceWorkerAsPath = manifest.background?.service_worker != null
+    const serviceworkerexitpoint = manifest.background?.service_worker != null
       ? path.resolve(path.join(this.exitrootdir, manifest.background.service_worker))
       : path.resolve(path.join(this.exitrootdir, "/service.worker.js"))
 
@@ -414,7 +414,7 @@ export class Glace {
     for await (const relative of glob("**/*", { cwd: this.exitrootdir })) {
       const absolute = path.resolve(path.join(this.exitrootdir, relative))
 
-      if (absolute === serviceWorkerAsPath)
+      if (absolute === serviceworkerexitpoint)
         continue
 
       const stats = await stat(absolute)
@@ -428,11 +428,11 @@ export class Glace {
       files.push(["/" + relative, `sha256-${hash.toString("base64")}`])
     }
 
-    if (serviceWorkerAsPath != null) {
-      const original = await readFile(serviceWorkerAsPath, "utf8")
+    if (serviceworkerexitpoint != null) {
+      const original = await readFile(serviceworkerexitpoint, "utf8")
       const replaced = original.replaceAll("FILES", JSON.stringify(files))
 
-      await mkdirAndWriteFile(serviceWorkerAsPath, replaced)
+      await mkdirAndWriteFileIfNotExists(serviceworkerexitpoint, replaced)
     }
 
     console.log(`Built in ${Math.round(performance.now() - start)}ms`)
