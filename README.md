@@ -288,7 +288,7 @@ You can write your own script that will fetch your database and fill `manifest.j
 ```tsx
 const manifest = await readFile("./www/manifest.json", "utf-8").then(JSON.parse)
 
-const posts = await fetch("/api/posts").then(r => r.json())
+const posts = await fetch("https://example.com/api/posts").then(r => r.json())
 
 for (const { id, title } of posts)
   manifest.paths.push[{ post: id, name: title.replaceAll(" ", "-").toLowerCase() }]
