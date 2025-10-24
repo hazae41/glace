@@ -314,7 +314,7 @@ deno -RWN ./scripts/generate.ts
   <title>Example</title>
   <script type="module">
     if (process.env.PLATFORM !== "browser") 
-      document.body.innerHTML = `<div>${Date.now()}</div>`
+      document.body.innerHTML = `<div>Copyright ${new Date().getUTCFullYear()}</div>`
     }
   </script>
 </head>
@@ -333,7 +333,7 @@ Will output
 </head>
 
 <body>
-  <div>1759832747706</div>
+  <div>Copyright 2025</div>
 </body>
 
 </html>
@@ -350,7 +350,7 @@ Will output
 <head>
   <title>Example</title>
   <script type="module">
-    document.body.innerHTML = `<div>${Date.now()}</div>`
+    document.body.innerHTML = `<div>Copyright ${new Date().getUTCFullYear()}</div>`
   </script>
 </head>
 
@@ -366,12 +366,12 @@ Will output
 <head>
   <title>Example</title>
   <script type="module">
-    document.body.innerHTML = `<div>${Date.now()}</div>`
+    document.body.innerHTML = `<div>Copyright ${new Date().getUTCFullYear()}</div>`
   </script>
 </head>
 
 <body>
-  <div>1759832747706</div>
+  <div>Copyright 2025</div>
 </body>
 
 </html>
