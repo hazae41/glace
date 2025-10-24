@@ -454,4 +454,4 @@ if (process.env.PLATFORM === "browser") {
 }
 ```
 
-For a more complete example, see #starters
+For more complete examples, see [#starters](#starters)
