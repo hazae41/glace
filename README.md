@@ -453,3 +453,5 @@ if (process.env.PLATFORM === "browser") {
   await new Rewind(document).prerenderOrThrow()
 }
 ```
+
+For a more complete example, see #starters
