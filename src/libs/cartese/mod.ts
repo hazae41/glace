@@ -1,40 +1,32 @@
-import type { Nullable } from "@/libs/nullable/mod.ts";
 
 export namespace cartese {
 
-  export function* generate(target: string, params: Nullable<Record<string, string[]>>): Generator<Record<string, string>> {
-    if (params == null) {
+  export function* match(target: string, paths: Record<string, string>[]) {
+    const pattern = /\[([^\]]+)\]/g
+    const matches = [...target.matchAll(pattern)]
+
+    let found = false
+
+    for (const params of paths) {
+      const keys = Object.keys(params)
+
+      if (keys.length !== matches.length)
+        continue
+      if (!matches.every((match) => keys.includes(match[1])))
+        continue
+
+      found = true
+
+      yield params
+    }
+
+    if (!found)
       yield {}
-      return
-    }
 
-    const entries = Object.entries(params)
-
-    function* recurse(index = 0, current = {}) {
-      const entry = entries[index]
-
-      if (entry == null) {
-        yield current
-        return
-      }
-
-      const [key, options] = entry
-
-      if (!target.includes(`[${key}]`)) {
-        yield* recurse(index + 1, current)
-        return
-      }
-
-      for (const option of options)
-        yield* recurse(index + 1, { ...current, [key]: option })
-
-      return
-    }
-
-    yield* recurse();
+    return
   }
 
-  export function resolve(target: string, params: Record<string, string>): string {
+  export function replace(target: string, params: Record<string, string>): string {
     let result = target
 
     for (const param in params)

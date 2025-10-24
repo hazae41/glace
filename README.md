@@ -169,13 +169,13 @@ self.addEventListener("fetch", (event) => {
 })
 ```
 
-### Dynamic paths
+### Generated paths
 
-You can generate dynamic paths using brackets and `manifest.json`
+You can generate paths using brackets as parameters
 
-All valid parameters will be located in `location` as search params
+And parameters will be available in `location` as search params
 
-> ./www/[lang]/index.html
+> ./www/[lang].html
 
 ```html
 <!DOCTYPE html>
@@ -200,22 +200,96 @@ All valid parameters will be located in `location` as search params
   "short_name": "Example",
   "name": "Example",
   "paths": {
-    "lang": [
-      "en",
-      "fr",
-      "es",
-      "de"
-    ]
+    {
+      "lang": "en"
+    },
+    {
+      "lang": "fr"
+    },
+    {
+      "lang": "es"
+    },
+    {
+      "lang": "de"
+    }
   }
 }
 ```
 
 Will output
 
-> ./www/en/index.html
-> ./www/fr/index.html
-> ./www/es/index.html
-> ./www/de/index.html
+> ./out/en.html
+> ./out/fr.html
+> ./out/es.html
+> ./out/de.html
+
+And you can use multiple parameters
+
+> ./www/posts/[post]/[name].html
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Example</title>
+  <script type="module">
+    if (process.env.PLATFORM !== "browser") {
+      const params = new URLSearchParams(location.search)
+
+      document.title = params.get("name")
+
+      document.body.innerHTML = await fetch(`/api/posts/${params.get("post")}`).then(r => r.text())
+    }
+  </script>
+</head>
+
+</html>
+```
+
+> ./www/manifest.json
+
+```json
+{
+  "short_name": "Example",
+  "name": "Example",
+  "paths": {
+    {
+      "post": 1,
+      "name": "how-to-start-coding"
+    },
+    {
+      "post": 2,
+      "name": "how-to-choose-a-license"
+    },
+    {
+      "post": 3,
+      "name": "how-to-deploy-a-website"
+    }
+  }
+}
+```
+
+Will output
+
+> ./out/posts/1/how-to-start-coding.html
+> ./out/posts/2/how-to-choose-a-license.html
+> ./out/posts/3/how-to-deploy-a-website.html
+
+You can write your own script that will fetch your database and fill `manifest.json`
+
+> ./scripts/generate.ts
+
+```tsx
+const manifest = await readFile("./www/manifest.json", "utf-8").then(JSON.parse)
+
+const posts = await fetch("/api/posts").then(r => r.json())
+
+for (const { id, title } of posts)
+  manifest.paths.push[{ post: id, name: title.replaceAll(" ", "-").toLowerCase() }]
+
+await writeFile("./www/manifest.json", JSON.stringify(manifest, null, 2))
+```
 
 ## Examples
 
