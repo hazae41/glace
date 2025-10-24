@@ -366,7 +366,7 @@ export class Glace {
 
     const files = new Array<[string, string]>()
 
-    const [serviceworkerexitpoint] = [manifest.background?.service_worker].map(x => x != null ? path.resolve(path.join(this.exitrootdir, x)) : null)
+    const [serviceworkerexitpoint] = [manifest.background?.service_worker].map(x => x != null ? path.resolve(path.join(this.exitrootdir, x)) : x)
 
     for await (const relative of glob("**/*", { cwd: this.exitrootdir })) {
       const absolute = path.resolve(path.join(this.exitrootdir, relative))
