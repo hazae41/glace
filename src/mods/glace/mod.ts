@@ -331,7 +331,7 @@ export class Glace {
           continue
         }
 
-        if (/\.((json)|(css))$/.test(relative)) {
+        if (/\.(css)$/.test(relative)) {
           bundles.push(bundleAsOther(entrypoint, params))
           continue
         }
