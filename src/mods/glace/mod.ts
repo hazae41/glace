@@ -6,7 +6,7 @@ import { Mutex } from "@hazae41/mutex";
 import { Window, type HTMLLinkElement, type HTMLScriptElement, type HTMLStyleElement } from "happy-dom";
 import crypto from "node:crypto";
 import { existsSync } from "node:fs";
-import { glob, readFile, rm, stat } from "node:fs/promises";
+import { glob, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -364,9 +364,7 @@ export class Glace {
 
     while (await Promise.all(bundles.map(g => g.next())).then(a => a.some(x => !x.done))); // finalize statics
 
-    const serviceworkerexitpoint = manifest.background?.service_worker != null
-      ? path.resolve(path.join(this.exitrootdir, manifest.background.service_worker))
-      : path.resolve(path.join(this.exitrootdir, "/service.worker.js"))
+    const [serviceworkerexitpoint] = [manifest.background?.service_worker].map(x => x && path.resolve(path.join(this.exitrootdir, x)))
 
     const files = new Array<[string, string]>()
 
@@ -387,11 +385,11 @@ export class Glace {
       files.push(["/" + relative, `sha256-${hash.toString("base64")}`])
     }
 
-    if (serviceworkerexitpoint != null) {
+    if (serviceworkerexitpoint != null && existsSync(serviceworkerexitpoint)) {
       const original = await readFile(serviceworkerexitpoint, "utf8")
       const replaced = original.replaceAll("FILES", JSON.stringify(files))
 
-      await mkdirAndWriteFileIfNotExists(serviceworkerexitpoint, replaced)
+      await writeFile(serviceworkerexitpoint, replaced)
     }
 
     console.log(`Built in ${Math.round(performance.now() - start)}ms`)
