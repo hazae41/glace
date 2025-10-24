@@ -364,7 +364,7 @@ export class Glace {
 
     while (await Promise.all(bundles.map(g => g.next())).then(a => a.some(x => !x.done))); // finalize statics
 
-    const [serviceworkerexitpoint] = [manifest.background?.service_worker].map(x => x && path.resolve(path.join(this.exitrootdir, x)))
+    const [serviceworkerexitpoint] = [manifest.background?.service_worker].map(x => x != null ? path.resolve(path.join(this.exitrootdir, x)) : null)
 
     const files = new Array<[string, string]>()
 
