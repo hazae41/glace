@@ -199,7 +199,7 @@ And parameters will be available in `location` as search params
 {
   "short_name": "Example",
   "name": "Example",
-  "paths": {
+  "paths": [
     {
       "lang": "en"
     },
@@ -212,7 +212,7 @@ And parameters will be available in `location` as search params
     {
       "lang": "de"
     }
-  }
+  ]
 }
 ```
 
@@ -256,7 +256,7 @@ And you can use multiple parameters
 {
   "short_name": "Example",
   "name": "Example",
-  "paths": {
+  "paths": [
     {
       "post": 1,
       "name": "how-to-start-coding"
@@ -269,7 +269,7 @@ And you can use multiple parameters
       "post": 3,
       "name": "how-to-deploy-a-website"
     }
-  }
+  ]
 }
 ```
 
