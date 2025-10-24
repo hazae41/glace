@@ -218,13 +218,13 @@ And parameters will be available in `location` as search params
 
 Will output
 
-> ./out/en.html
+- > ./out/en.html
 
-> ./out/fr.html
+- > ./out/fr.html
 
-> ./out/es.html
+- > ./out/es.html
 
-> ./out/de.html
+- > ./out/de.html
 
 And you can use multiple parameters
 
@@ -275,11 +275,11 @@ And you can use multiple parameters
 
 Will output
 
-> ./out/posts/1/how-to-start-coding.html
+- > ./out/posts/1/how-to-start-coding.html
 
-> ./out/posts/2/how-to-choose-a-license.html
+- > ./out/posts/2/how-to-choose-a-license.html
 
-> ./out/posts/3/how-to-deploy-a-website.html
+- > ./out/posts/3/how-to-deploy-a-website.html
 
 You can write your own script that will fetch your database and fill `manifest.json`
 
