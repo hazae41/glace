@@ -296,6 +296,10 @@ for (const { id, title } of posts)
 await writeFile("./www/manifest.json", JSON.stringify(manifest, null, 2))
 ```
 
+```bash
+deno -RWN ./scripts/generate.ts
+```
+
 ## Examples
 
 ### A simple HTML file with prerendering
