@@ -2,7 +2,7 @@
   "type": "module",
   "name": "@hazae41/glace",
   "version": "1.0.10",
-  "description": "Create immutable websites",
+  "description": "Build a webapp with security in mind",
   "repository": "github:hazae41/glace",
   "author": "hazae41",
   "license": "MIT",

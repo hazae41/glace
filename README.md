@@ -1,6 +1,6 @@
 # Glace
 
-Create immutable websites
+Build a webapp with security in mind
 
 ```bash
 npm install -D @hazae41/glace
