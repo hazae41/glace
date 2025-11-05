@@ -379,7 +379,7 @@ export class Glace {
       if (stats.isDirectory())
         continue
 
-      const data = await readFile(absolute, "utf8")
+      const data = await readFile(absolute)
       const hash = crypto.createHash("sha256").update(data).digest()
 
       files.push(["/" + relative, `sha256-${hash.toString("base64")}`])
