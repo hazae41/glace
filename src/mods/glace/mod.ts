@@ -1,7 +1,3 @@
-import { Builder } from "@/libs/bundle/mod.ts";
-import { cartese } from "@/libs/cartese/mod.ts";
-import { mkdirAndWriteFileIfNotExists, readFileAsListOrEmpty } from "@/libs/fs/mod.ts";
-import { redot } from "@/libs/redot/mod.ts";
 import { Mutex } from "@hazae41/mutex";
 import { Window, type HTMLLinkElement, type HTMLScriptElement, type HTMLStyleElement } from "happy-dom";
 import crypto from "node:crypto";
@@ -9,6 +5,10 @@ import { existsSync } from "node:fs";
 import { glob, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { Builder } from "../../libs/bundle/mod.ts";
+import { cartese } from "../../libs/cartese/mod.ts";
+import { mkdirAndWriteFileIfNotExists, readFileAsListOrEmpty } from "../../libs/fs/mod.ts";
+import { redot } from "../../libs/redot/mod.ts";
 
 export class Glace {
 
@@ -312,7 +312,7 @@ export class Glace {
 
     const exclude = await readFileAsListOrEmpty(path.resolve(path.join(this.entryrootdir, "./.bundleignore")))
 
-    for await (const relative of glob("**/*", { cwd: this.entryrootdir, exclude })) {
+    for await (const relative of glob("**", { cwd: this.entryrootdir, exclude })) {
       const entrypoint = path.resolve(path.join(this.entryrootdir, relative))
 
       const stats = await stat(entrypoint)
