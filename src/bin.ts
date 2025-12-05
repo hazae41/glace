@@ -57,7 +57,9 @@ if (!options.watch)
 
 let timeout: number | undefined
 
-watch(options.watch === true ? input : options.watch, {
+const watched = options.watch === true ? input : options.watch
+
+watch(watched, {
   recursive: true
 }, () => {
   clearTimeout(timeout)
