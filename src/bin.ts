@@ -7,7 +7,7 @@ import { Glace } from "./mods/glace/mod.ts";
 const options: {
   input?: string;
   output?: string;
-  watch?: boolean
+  watch?: string | true
   mode?: "development" | "production"
 } = {}
 
@@ -19,18 +19,8 @@ for (let i = 2; i < process.argv.length; i++) {
     continue
   }
 
-  if (arg.startsWith("--out")) {
-    options.output = process.argv[++i]
-    continue
-  }
-
   if (arg.startsWith("--watch=")) {
-    options.watch = arg.slice("--watch=".length) === "true"
-    continue
-  }
-
-  if (arg.startsWith("--watch")) {
-    options.watch = true
+    options.watch = arg.slice("--watch=".length)
     continue
   }
 
@@ -39,7 +29,12 @@ for (let i = 2; i < process.argv.length; i++) {
     continue
   }
 
-  if (arg.startsWith("--dev")) {
+  if (arg === "--watch") {
+    options.watch = true
+    continue
+  }
+
+  if (arg === "--dev") {
     options.mode = "development"
     continue
   }
@@ -57,9 +52,17 @@ const glace = new Glace(input, output, mode)
 
 await glace.build()
 
+if (!options.watch)
+  process.exit(0)
+
 let timeout: number | undefined
 
-if (options.watch)
-  watch(input, { recursive: true }, () => { clearTimeout(timeout); timeout = setTimeout(() => glace.build().catch(console.error), 300) })
-else
-  process.exit(0)
+watch(options.watch === true ? input : options.watch, {
+  recursive: true
+}, () => {
+  clearTimeout(timeout)
+
+  timeout = setTimeout(() => glace.build().catch(console.error), 300)
+
+  return
+})
