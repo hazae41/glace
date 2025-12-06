@@ -1,4 +1,4 @@
-#!/usr/bin / env node
+#!/usr/bin/env node
 
 // deno-lint-ignore-file no-unused-vars
 
