@@ -1,4 +1,6 @@
-#!/usr/bin/env node
+#!/usr/bin / env node
+
+// deno-lint-ignore-file no-unused-vars
 
 import { watch } from "node:fs";
 import process from "node:process";
@@ -61,7 +63,10 @@ const watched = options.watch === true ? input : options.watch
 
 watch(watched, {
   recursive: true
-}, () => {
+}, (event, filename) => {
+  if (filename.startsWith("."))
+    return
+
   clearTimeout(timeout)
 
   timeout = setTimeout(() => glace.build().catch(console.error), 300)

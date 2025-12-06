@@ -1,5 +1,6 @@
 import esbuild, { type BuildContext, type BuildOptions, type OutputFile } from "esbuild";
 import crypto from "node:crypto";
+import { mkdir, rm } from "node:fs/promises";
 import { builtinModules } from "node:module";
 import path from "node:path";
 import type { Nullable } from "../nullable/mod.ts";
@@ -10,6 +11,7 @@ export class Builder {
 
   readonly outputs: Map<string, OutputFile> = new Map()
 
+  #inputs = new Set<string>()
   #context: Nullable<BuildContext>
 
   constructor(
@@ -27,21 +29,26 @@ export class Builder {
 
     this.inputs.add(file)
 
-    this.#context = null
-
     return outfile
   }
 
-  clear() {
-    this.#context = null
+  delete(file: string) {
+    this.inputs.delete(file)
+  }
 
-    this.inputs.clear()
+  async clear() {
     this.outputs.clear()
+
+    await rm(this.exitrootdir, { recursive: true, force: true })
+
+    await mkdir(this.exitrootdir, { recursive: true })
   }
 
   async #compute() {
-    if (this.#context != null)
+    if (this.inputs.difference(this.#inputs).size === 0 && this.#context != null)
       return this.#context
+
+    this.#inputs = new Set(this.inputs)
 
     const inputs = [...this.inputs.keys()]
 

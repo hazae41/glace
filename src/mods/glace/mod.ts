@@ -1,45 +1,63 @@
 import { Mutex } from "@hazae41/mutex";
 import { Window, type HTMLLinkElement, type HTMLScriptElement, type HTMLStyleElement } from "happy-dom";
 import crypto from "node:crypto";
-import { existsSync } from "node:fs";
-import { glob, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { existsSync, rmSync } from "node:fs";
+import { cp, glob, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import process from "node:process";
 import { Builder } from "../../libs/bundle/mod.ts";
 import { cartese } from "../../libs/cartese/mod.ts";
 import { mkdirAndWriteFileIfNotExists, readFileAsListOrEmpty } from "../../libs/fs/mod.ts";
 import { redot } from "../../libs/redot/mod.ts";
+
+const globalThisMutex = new Mutex(undefined)
+
+let stack = new DisposableStack()
+
+process.addListener("exit", () => stack.dispose())
+
+process.addListener("SIGINT", () => process.exit(1))
+process.addListener("SIGTERM", () => process.exit(1))
+
+addEventListener("unhandledrejection", () => stack.dispose())
+addEventListener("error", () => stack.dispose())
 
 export class Glace {
 
   readonly client: Builder
   readonly statxc: Builder
 
+  readonly mutex = new Mutex(undefined)
+
   constructor(
     readonly entryrootdir: string,
     readonly exitrootdir: string,
     readonly mode: "production" | "development"
   ) {
-    const tmp = path.join(tmpdir(), crypto.randomUUID().slice(0, 8))
+    const statxcrootdir = path.join(tmpdir(), crypto.randomUUID().slice(0, 8))
+    const clientrootdir = path.join(tmpdir(), crypto.randomUUID().slice(0, 8))
 
-    this.client = new Builder(this.entryrootdir, this.exitrootdir, "browser", this.mode)
-    this.statxc = new Builder(this.entryrootdir, tmp, "node", this.mode)
+    this.client = new Builder(this.entryrootdir, clientrootdir, "browser", this.mode)
+    this.statxc = new Builder(this.entryrootdir, statxcrootdir, "node", this.mode)
   }
 
   async build() {
+    using substack = new DisposableStack()
+
+    stack = substack
+
+    using _ = await this.mutex.lockOrWait()
+
     console.log("Building...")
 
     const start = performance.now()
 
-    this.client.clear()
-    this.statxc.clear()
-
-    await rm(this.exitrootdir, { recursive: true, force: true })
-
-    const mutex = new Mutex(undefined)
+    await this.client.clear()
+    await this.statxc.clear()
 
     const bundleAsHtml = (async function* (this: Glace, entrypoint: string, params: Record<string, string> = {}) {
-      const exitpoint = cartese.replace(path.resolve(path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))), params)
+      const exitpoint = cartese.replace(path.resolve(path.join(this.client.exitrootdir, path.relative(this.entryrootdir, entrypoint))), params)
 
       const entrypointdir = path.dirname(entrypoint)
       const exitpointdir = path.dirname(exitpoint)
@@ -95,7 +113,7 @@ export class Glace {
 
           await mkdirAndWriteFileIfNotExists(statxcexitpoint, statxc.contents)
 
-          using _ = await mutex.lockOrWait()
+          using _ = await globalThisMutex.lockOrWait()
 
           // @ts-expect-error:
           globalThis.window = window
@@ -114,16 +132,17 @@ export class Glace {
 
           return
         } else {
-          await using stack = new AsyncDisposableStack()
-
           const dummy = path.resolve(path.join(entrypointdir, `./.${crypto.randomUUID().slice(0, 8)}.js`))
 
           await mkdirAndWriteFileIfNotExists(dummy, script.textContent)
 
-          stack.defer(() => rm(dummy, { force: true }))
+          stack.defer(() => rmSync(dummy, { force: true }))
 
           const rawclientexitpoint = this.client.add(dummy)
           const rawstatxcexitpoint = this.statxc.add(dummy)
+
+          stack.defer(() => this.client.delete(dummy))
+          stack.defer(() => this.statxc.delete(dummy))
 
           yield
 
@@ -140,7 +159,7 @@ export class Glace {
 
           await mkdirAndWriteFileIfNotExists(statxcexitpoint, statxc.contents)
 
-          using _ = await mutex.lockOrWait()
+          using _ = await globalThisMutex.lockOrWait()
 
           // @ts-expect-error:
           globalThis.window = window
@@ -162,15 +181,15 @@ export class Glace {
       }).bind(this)
 
       const bundleAsStyle = (async function* (this: Glace, style: HTMLStyleElement) {
-        await using stack = new AsyncDisposableStack()
-
         const dummy = path.resolve(path.join(entrypointdir, `./.${crypto.randomUUID().slice(0, 8)}.css`))
 
         await mkdirAndWriteFileIfNotExists(dummy, style.textContent)
 
-        stack.defer(() => rm(dummy, { force: true }))
+        stack.defer(() => rmSync(dummy, { force: true }))
 
         const rawclientexitpoint = this.client.add(dummy)
+
+        stack.defer(() => this.client.delete(dummy))
 
         yield
 
@@ -298,7 +317,7 @@ export class Glace {
     }).bind(this)
 
     const copyAsAsset = (async function* (this: Glace, entrypoint: string, params: Record<string, string> = {}) {
-      const exitpoint = cartese.replace(path.resolve(path.join(this.exitrootdir, path.relative(this.entryrootdir, entrypoint))), params)
+      const exitpoint = cartese.replace(path.resolve(path.join(this.client.exitrootdir, path.relative(this.entryrootdir, entrypoint))), params)
 
       yield
 
@@ -366,10 +385,10 @@ export class Glace {
 
     const files = new Array<[string, string]>()
 
-    const [serviceworkerexitpoint] = [manifest.background?.service_worker].map(x => x != null ? path.resolve(path.join(this.exitrootdir, x)) : x)
+    const [serviceworkerexitpoint] = [manifest.background?.service_worker].map(x => x != null ? path.resolve(path.join(this.client.exitrootdir, x)) : x)
 
-    for await (const relative of glob("**/*", { cwd: this.exitrootdir })) {
-      const absolute = path.resolve(path.join(this.exitrootdir, relative))
+    for await (const relative of glob("**/*", { cwd: this.client.exitrootdir })) {
+      const absolute = path.resolve(path.join(this.client.exitrootdir, relative))
 
       if (absolute === serviceworkerexitpoint)
         continue
@@ -391,6 +410,12 @@ export class Glace {
 
       await writeFile(serviceworkerexitpoint, replaced)
     }
+
+    await rm(this.exitrootdir, { recursive: true, force: true })
+
+    await mkdir(this.exitrootdir, { recursive: true })
+
+    await cp(this.client.exitrootdir, this.exitrootdir, { recursive: true, force: true })
 
     console.log(`Built in ${Math.round(performance.now() - start)}ms`)
   }
