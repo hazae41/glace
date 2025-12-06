@@ -28,7 +28,7 @@ export class Glace {
   readonly client: Builder
   readonly statxc: Builder
 
-  readonly mutex = new Mutex(undefined)
+  readonly mutex: Mutex<void> = new Mutex(undefined)
 
   constructor(
     readonly entryrootdir: string,
