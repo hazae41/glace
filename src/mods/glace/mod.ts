@@ -21,8 +21,8 @@ process.addListener("SIGINT", () => process.exit(1))
 process.addListener("SIGTERM", () => process.exit(1))
 
 if ("addEventListener" in globalThis) {
-  addEventListener?.("unhandledrejection", () => stack.dispose())
-  addEventListener?.("error", () => stack.dispose())
+  addEventListener("unhandledrejection", () => stack.dispose())
+  addEventListener("error", () => stack.dispose())
 }
 
 export class Glace {
