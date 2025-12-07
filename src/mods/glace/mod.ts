@@ -408,7 +408,10 @@ export class Glace {
 
     if (serviceworkerexitpoint != null && existsSync(serviceworkerexitpoint)) {
       const original = await readFile(serviceworkerexitpoint, "utf8")
-      const replaced = original.replaceAll("FILES", JSON.stringify(files))
+
+      const replaced = original
+        .replaceAll("CACHE", `"#${crypto.randomUUID()}"`)
+        .replaceAll("FILES", JSON.stringify(files))
 
       await writeFile(serviceworkerexitpoint, replaced)
     }
