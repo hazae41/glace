@@ -1,6 +1,6 @@
 {
   "name": "@hazae41/glace",
-  "version": "1.0.21",
+  "version": "1.0.22",
   "imports": {
     "@/": "./src/",
     "@hazae41/mutex": "jsr:@hazae41/mutex@^3.0.1",
