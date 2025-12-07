@@ -2,7 +2,7 @@
 
 // deno-lint-ignore-file no-unused-vars
 
-import { watch } from "node:fs";
+import { watch, WatchEventType } from "node:fs";
 import process from "node:process";
 import { Glace } from "./mods/glace/mod.ts";
 
@@ -59,11 +59,7 @@ if (!options.watch)
 
 let timeout: number | undefined
 
-const watched = options.watch === true ? input : options.watch
-
-watch(watched, {
-  recursive: true
-}, (event, filename) => {
+const onchange = (event: WatchEventType, filename: string) => {
   if (filename.startsWith("."))
     return
 
@@ -72,4 +68,11 @@ watch(watched, {
   timeout = setTimeout(() => glace.build().catch(console.error), 300)
 
   return
-})
+}
+
+const paths = options.watch === true ? [input] : options.watch.split(",")
+
+for (const path of paths)
+  watch(path, { recursive: true }, onchange)
+
+console.log("Watching...")
