@@ -407,11 +407,14 @@ export class Glace {
     }
 
     if (serviceworkerexitpoint != null && existsSync(serviceworkerexitpoint)) {
+      const data = JSON.stringify(files)
+      const hash = crypto.createHash("sha256").update(data).digest()
+
       const original = await readFile(serviceworkerexitpoint, "utf8")
 
       const replaced = original
-        .replaceAll("CACHE", `"#${crypto.randomUUID()}"`)
-        .replaceAll("FILES", JSON.stringify(files))
+        .replaceAll("CACHE", `"#${hash.toString("base64")}"`)
+        .replaceAll("FILES", data)
 
       await writeFile(serviceworkerexitpoint, replaced)
     }
