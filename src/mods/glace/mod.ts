@@ -93,15 +93,15 @@ export class Glace {
 
           const relative = redot(path.relative(exitpointdir, clientexitpoint))
 
-          integrity[relative] = client.hash
+          integrity[`${relative}?integrity=${client.hash}`] = client.hash
 
-          script.src = `${relative}#${client.hash}`
+          script.src = `${relative}?integrity=${client.hash}`
           script.integrity = client.hash
 
           const link = document.createElement("link")
 
           link.rel = "modulepreload"
-          link.href = `${relative}#${client.hash}`
+          link.href = `${relative}?integrity=${client.hash}`
 
           link.setAttribute("integrity", client.hash)
 
@@ -224,7 +224,7 @@ export class Glace {
 
         const relative = redot(path.relative(exitpointdir, clientexitpoint))
 
-        link.href = `${relative}#${client.hash}`
+        link.href = `${relative}?integrity=${client.hash}`
 
         link.setAttribute("integrity", client.hash)
 
@@ -245,7 +245,7 @@ export class Glace {
         const data = await readFile(url.pathname)
         const hash = crypto.createHash("sha256").update(data).digest("base64")
 
-        link.href = `${link.href}#${hash}`
+        link.href = `${link.href}?integrity=${hash}`
         link.setAttribute("integrity", `sha256-${hash}`)
 
         return
@@ -265,7 +265,7 @@ export class Glace {
         const data = await readFile(url.pathname)
         const hash = crypto.createHash("sha256").update(data).digest("base64")
 
-        link.href = `${link.href}#${hash}`
+        link.href = `${link.href}?integrity=${hash}`
         link.setAttribute("integrity", `sha256-${hash}`)
 
         return
