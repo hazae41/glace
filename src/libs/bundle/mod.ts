@@ -56,12 +56,12 @@ export class Builder {
       write: false,
       bundle: true,
       format: "esm",
+      minify: false,
       entryPoints: inputs,
       platform: this.platform,
       outdir: this.exitrootdir,
       outbase: this.entryrootdir,
       external: ["node:*", ...builtinModules],
-      minify: this.mode === "production" ? true : false,
       sourcemap: this.mode === "production" ? false : "linked",
       define: { "process.env.PLATFORM": JSON.stringify(this.platform) },
       banner: this.platform === "node" ? { js: `import { createRequire } from "node:module"; const require = createRequire(import.meta.url);` } : {}

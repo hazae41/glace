@@ -334,43 +334,49 @@ export class Glace {
     const exclude = await readFileAsListOrEmpty(path.resolve(path.join(this.entryrootdir, "./.bundleignore")))
 
     for await (const relative of glob("**", { cwd: this.entryrootdir, exclude })) {
-      const entrypoint = path.resolve(path.join(this.entryrootdir, relative))
+      const absolute = path.resolve(path.join(this.entryrootdir, relative))
 
-      const stats = await stat(entrypoint)
+      if (this.mode === "development" && /\[([^\]]+)\]/g.test(absolute))
+        continue
+
+      const stats = await stat(absolute)
 
       if (stats.isDirectory())
         continue
 
-      for (const params of cartese.match(entrypoint, manifest.paths)) {
+      for (const params of cartese.match(absolute, manifest.paths)) {
         if (relative.endsWith(".html")) {
-          bundles.push(bundleAsHtml(entrypoint, params))
+          bundles.push(bundleAsHtml(absolute, params))
           continue
         }
 
         if (/\.((c|m)?(t|j)s(x?))$/.test(relative)) {
-          bundles.push(bundleAsOther(entrypoint, params))
+          bundles.push(bundleAsOther(absolute, params))
           continue
         }
 
         if (/\.(css)$/.test(relative)) {
-          bundles.push(bundleAsOther(entrypoint, params))
+          bundles.push(bundleAsOther(absolute, params))
           continue
         }
 
-        bundles.push(copyAsAsset(entrypoint, params))
+        bundles.push(copyAsAsset(absolute, params))
       }
     }
 
     for await (const relative of glob(exclude, { cwd: this.entryrootdir })) {
-      const entrypoint = path.resolve(path.join(this.entryrootdir, relative))
+      const absolute = path.resolve(path.join(this.entryrootdir, relative))
 
-      const stats = await stat(entrypoint)
+      if (this.mode === "development" && /\[([^\]]+)\]/g.test(absolute))
+        continue
+
+      const stats = await stat(absolute)
 
       if (stats.isDirectory())
         continue
 
-      for (const params of cartese.match(entrypoint, manifest.paths))
-        bundles.push(copyAsAsset(entrypoint, params))
+      for (const params of cartese.match(absolute, manifest.paths))
+        bundles.push(copyAsAsset(absolute, params))
 
       continue
     }
