@@ -64,7 +64,7 @@ export class Builder {
       outbase: this.entryrootdir,
       external: ["node:*", ...builtinModules],
       sourcemap: this.mode === "production" ? false : "linked",
-      define: { "process.env.PLATFORM": JSON.stringify(this.platform) },
+      define: { "process.env.PLATFORM": JSON.stringify(this.platform), "process.env.NODE_ENV": JSON.stringify(this.mode) },
       banner: this.platform === "node" ? { js: `import { createRequire } from "node:module"; const require = createRequire(import.meta.url);` } : {}
     } as const
 
