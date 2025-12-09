@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@hazae41/glace",
-  "version": "1.0.22",
+  "version": "1.0.23",
   "description": "Build a webapp with security in mind",
   "repository": "github:hazae41/glace",
   "author": "hazae41",
