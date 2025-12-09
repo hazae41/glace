@@ -57,6 +57,7 @@ export class Builder {
       bundle: true,
       format: "esm",
       minify: false,
+      target: "es2024",
       entryPoints: inputs,
       platform: this.platform,
       outdir: this.exitrootdir,
