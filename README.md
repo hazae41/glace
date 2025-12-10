@@ -31,7 +31,7 @@ deno install -gfn glace -RW jsr:@hazae41/glace/bin
 ### Bash 
 
 ```bash
-glace ./www --out=./dst --dev --watch
+glace ./www --out=./dst --dev --watch=./www,./src
 ```
 
 ### Code
