@@ -13,16 +13,16 @@ import { redot } from "../../libs/redot/mod.ts";
 
 const globalThisMutex = new Mutex(undefined)
 
-let stack = new DisposableStack()
+const panic = new DisposableStack()
 
-process.addListener("exit", () => stack.dispose())
+process.addListener("exit", () => panic.dispose())
 
 process.addListener("SIGINT", () => process.exit(1))
 process.addListener("SIGTERM", () => process.exit(1))
 
 if ("addEventListener" in globalThis) {
-  addEventListener("unhandledrejection", () => stack.dispose())
-  addEventListener("error", () => stack.dispose())
+  addEventListener("unhandledrejection", () => panic.dispose())
+  addEventListener("error", () => panic.dispose())
 }
 
 export class Glace {
@@ -45,9 +45,7 @@ export class Glace {
   }
 
   async build() {
-    using substack = new DisposableStack()
-
-    stack = substack
+    using stack = new DisposableStack()
 
     using _ = await this.mutex.lockOrWait()
 
@@ -66,6 +64,8 @@ export class Glace {
 
       const window = new Window({ url: "file://" + entrypoint });
       const document = new window.DOMParser().parseFromString(await readFile(entrypoint, "utf8"), "text/html")
+
+      document.close()
 
       const integrity: Record<string, string> = {}
 
@@ -139,6 +139,7 @@ export class Glace {
           await mkdirAndWriteFileIfNotExists(dummy, script.textContent)
 
           stack.defer(() => rmSync(dummy, { force: true }))
+          panic.defer(() => rmSync(dummy, { force: true }))
 
           const rawclientexitpoint = this.client.add(dummy)
           const rawstatxcexitpoint = this.statxc.add(dummy)
@@ -188,6 +189,7 @@ export class Glace {
         await mkdirAndWriteFileIfNotExists(dummy, style.textContent)
 
         stack.defer(() => rmSync(dummy, { force: true }))
+        panic.defer(() => rmSync(dummy, { force: true }))
 
         const rawclientexitpoint = this.client.add(dummy)
 
