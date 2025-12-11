@@ -63,9 +63,12 @@ export class Glace {
       const exitpointdir = path.dirname(exitpoint)
 
       const window = new Window({ url: "file://" + entrypoint });
+
+      stack.defer(() => window.close())
+
       const document = new window.DOMParser().parseFromString(await readFile(entrypoint, "utf8"), "text/html")
 
-      document.close()
+      stack.defer(() => document.close())
 
       const integrity: Record<string, string> = {}
 
