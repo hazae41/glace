@@ -48,6 +48,8 @@ export class Builder {
     if (this.inputs.difference(this.#inputs).size === 0 && this.#context != null)
       return this.#context
 
+    await this.#context?.dispose()
+
     this.#inputs = new Set(this.inputs)
 
     const inputs = [...this.inputs.keys()]
