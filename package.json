@@ -24,7 +24,7 @@
   "devDependencies": {
     "@hazae41/phobos": "^2.0.16",
     "@hazae41/tscousin": "^1.0.28",
-    "@types/node": "^24.8.1",
+    "@types/node": "^25.0.0",
     "typescript": "^5.9.3"
   },
   "keywords": [
@@ -32,8 +32,8 @@
   ],
   "dependencies": {
     "@hazae41/mutex": "^3.0.1",
-    "esbuild": "^0.25.11",
-    "happy-dom": "^20.0.7"
+    "esbuild": "^0.27.1",
+    "happy-dom": "^20.0.11"
   },
   "bin": {
     "glace": "./out/bin.js"
