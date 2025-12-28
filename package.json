@@ -8,8 +8,6 @@
   "license": "MIT",
   "scripts": {
     "examine": "deno lint ./src && deno check ./src && deno test ./src",
-    "version": "deno -RW ./x.vsync.ts && git add deno.json",
-    "prepare": "deno -RW ./x.dsync.ts && deno install",
     "prepack": "rm -rf ./out && tsc && tscousin"
   },
   "files": [
@@ -24,7 +22,8 @@
   "devDependencies": {
     "@hazae41/phobos": "^2.0.16",
     "@hazae41/tscousin": "^1.0.28",
-    "@types/node": "^25.0.0",
+    "@types/node": "^25.0.3",
+    "deno": "^2.6.3",
     "typescript": "^5.9.3"
   },
   "keywords": [
@@ -32,10 +31,10 @@
   ],
   "dependencies": {
     "@hazae41/mutex": "^3.0.1",
-    "esbuild": "^0.27.1",
+    "esbuild": "^0.27.2",
     "happy-dom": "^20.0.11"
   },
   "bin": {
-    "glace": "./out/bin.js"
+    "glace": "./out/mod.js"
   }
 }

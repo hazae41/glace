@@ -88,7 +88,7 @@ export class Glace {
 
           yield
 
-          const client = this.client.outputs.get(rawclientexitpoint)
+          const client = this.client.outputs.get(rawclientexitpoint)!
 
           const clientexitpoint = cartese.replace(client.path, params)
 
@@ -112,7 +112,7 @@ export class Glace {
 
           yield
 
-          const statxc = this.statxc.outputs.get(rawstatxcexitpoint)
+          const statxc = this.statxc.outputs.get(rawstatxcexitpoint)!
 
           const statxcexitpoint = cartese.replace(statxc.path, params)
 
@@ -131,8 +131,13 @@ export class Glace {
 
           await import(`file:${statxcexitpoint}#${crypto.randomUUID().slice(0, 8)}`)
 
+          // @ts-expect-error:
           delete globalThis.window
+
+          // @ts-expect-error:
           delete globalThis.document
+
+          // @ts-expect-error:
           delete globalThis.location
 
           return
@@ -152,14 +157,14 @@ export class Glace {
 
           yield
 
-          const client = this.client.outputs.get(rawclientexitpoint)
+          const client = this.client.outputs.get(rawclientexitpoint)!
 
           script.textContent = client.text
           script.integrity = client.hash
 
           yield
 
-          const statxc = this.statxc.outputs.get(rawstatxcexitpoint)
+          const statxc = this.statxc.outputs.get(rawstatxcexitpoint)!
 
           const statxcexitpoint = cartese.replace(statxc.path, params)
 
@@ -178,8 +183,13 @@ export class Glace {
 
           await import(`file:${statxcexitpoint}#${crypto.randomUUID().slice(0, 8)}`)
 
+          // @ts-expect-error:
           delete globalThis.window
+
+          // @ts-expect-error:
           delete globalThis.document
+
+          // @ts-expect-error:
           delete globalThis.location
 
           return
@@ -200,7 +210,7 @@ export class Glace {
 
         yield
 
-        const client = this.client.outputs.get(rawclientexitpoint)
+        const client = this.client.outputs.get(rawclientexitpoint)!
 
         style.textContent = `\n    ${client.text.trim()}\n  `
 
@@ -221,7 +231,7 @@ export class Glace {
 
         yield
 
-        const client = this.client.outputs.get(rawclientexitpoint)
+        const client = this.client.outputs.get(rawclientexitpoint)!
 
         const clientexitpoint = cartese.replace(client.path, params)
 
@@ -318,7 +328,7 @@ export class Glace {
 
       yield
 
-      const client = this.client.outputs.get(rawclientexitpoint)
+      const client = this.client.outputs.get(rawclientexitpoint)!
 
       const clientexitpoint = cartese.replace(client.path, params)
 

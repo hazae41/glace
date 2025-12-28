@@ -1,21 +1,12 @@
 {
-  "name": "@hazae41/glace",
-  "version": "1.0.30",
   "imports": {
-    "@/": "./src/",
-    "@hazae41/mutex": "jsr:@hazae41/mutex@^3.0.1",
-    "@hazae41/phobos": "jsr:@hazae41/phobos@^2.0.16",
-    "@hazae41/tscousin": "jsr:@hazae41/tscousin@^1.0.28"
+    "@/": "./src/"
   },
-  "exports": {
-    ".": "./src/mod.ts",
-    "./bin": "./src/bin.ts"
-  },
-  "lint": {
-    "rules": {
-      "exclude": [
-        "no-namespace"
-      ]
-    }
+  "compilerOptions": {
+    "lib": [
+      "esnext",
+      "dom",
+      "deno.ns"
+    ]
   }
 }
