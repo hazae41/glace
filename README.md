@@ -6,7 +6,7 @@ Build a webapp with security in mind
 npm install -D @hazae41/glace
 ```
 
-[**📦 NPM**](https://www.npmjs.com/package/@hazae41/glace) • [**📦 JSR**](https://jsr.io/@hazae41/glace)
+[**📦 NPM**](https://www.npmjs.com/package/@hazae41/glace)
 
 ## Features
 
