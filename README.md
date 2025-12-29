@@ -20,7 +20,7 @@ npm install -D @hazae41/glace
 
 ## Starters
 
-- [@hazae41/create-secure-webapp](https://github.com/hazae41/create-secure-webapp) / Start a cool webapp with React and Tailwind
+- [@hazae41/create-secure-webapp](https://github.com/hazae41/create-secure-webapp) / Start a secure webapp with React and Tailwind
 
 ## Usage
 
