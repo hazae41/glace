@@ -60,7 +60,7 @@ if (import.meta.main) {
   if (!options.watch)
     process.exit(0)
 
-  let timeout: number | undefined
+  let timeout: NodeJS.Timeout
 
   const onchange = (event: WatchEventType, filename: string | null) => {
     if (filename == null)
