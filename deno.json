@@ -1,5 +1,12 @@
 {
   "imports": {
     "@/": "./src/"
+  },
+  "compilerOptions": {
+    "lib": [
+      "esnext",
+      "dom",
+      "deno.ns"
+    ]
   }
 }
