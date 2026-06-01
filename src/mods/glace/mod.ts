@@ -25,6 +25,12 @@ if ("addEventListener" in globalThis) {
   addEventListener("error", () => panic.dispose())
 }
 
+/**
+ * https://github.com/denoland/deno/issues/34677
+ */
+globalThis.WebAssembly.instantiateStreaming = (source, imports, options) => Promise.resolve(source).then(r => r.bytes()).then(r => WebAssembly.instantiate(r, imports, options))
+globalThis.WebAssembly.compileStreaming = (source, options) => Promise.resolve(source).then(r => r.bytes()).then(r => WebAssembly.compile(r, options))
+
 export class Glace {
 
   readonly client: Builder
