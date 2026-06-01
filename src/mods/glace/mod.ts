@@ -11,6 +11,12 @@ import { cartese } from "../../libs/cartese/mod.ts";
 import { mkdirAndWriteFileIfNotExists, readFileAsListOrEmpty } from "../../libs/fs/mod.ts";
 import { redot } from "../../libs/redot/mod.ts";
 
+/**
+ * https://github.com/denoland/deno/issues/34677
+ */
+globalThis.WebAssembly.instantiateStreaming = (source, imports, options) => Promise.resolve(source).then(r => r.bytes()).then(r => WebAssembly.instantiate(r, imports, options))
+globalThis.WebAssembly.compileStreaming = (source, options) => Promise.resolve(source).then(r => r.bytes()).then(r => WebAssembly.compile(r, options))
+
 const globalThisMutex = new Mutex(undefined)
 
 const panic = new DisposableStack()
@@ -24,12 +30,6 @@ if ("addEventListener" in globalThis) {
   addEventListener("unhandledrejection", () => panic.dispose())
   addEventListener("error", () => panic.dispose())
 }
-
-/**
- * https://github.com/denoland/deno/issues/34677
- */
-globalThis.WebAssembly.instantiateStreaming = (source, imports, options) => Promise.resolve(source).then(r => r.bytes()).then(r => WebAssembly.instantiate(r, imports, options))
-globalThis.WebAssembly.compileStreaming = (source, options) => Promise.resolve(source).then(r => r.bytes()).then(r => WebAssembly.compile(r, options))
 
 export class Glace {
 
