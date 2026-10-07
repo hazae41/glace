@@ -22,17 +22,17 @@
   "devDependencies": {
     "@hazae41/phobos": "^2.0.16",
     "@hazae41/tscousin": "^1.0.28",
-    "@types/node": "^25.9.1",
-    "deno": "^2.8.1",
-    "typescript": "^6.0.3"
+    "@types/node": "^26.6.4",
+    "deno": "^2.9.6",
+    "typescript": "^7.0.2"
   },
   "keywords": [
     "immutable"
   ],
   "dependencies": {
     "@hazae41/mutex": "^3.0.1",
-    "esbuild": "^0.28.0",
-    "happy-dom": "^20.9.0"
+    "esbuild": "^0.28.2",
+    "happy-dom": "^20.14.5"
   },
   "bin": {
     "glace": "./out/mod.js"
