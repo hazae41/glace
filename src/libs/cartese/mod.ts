@@ -2,7 +2,7 @@
 
 export namespace cartese {
 
-  export function* match(target: string, paths: Record<string, string>[]) {
+  export function* match(target: string, paths: Record<string, string>[] = []) {
     const pattern = /\[([^\]]+)\]/g
     const matches = [...target.matchAll(pattern)]
 
