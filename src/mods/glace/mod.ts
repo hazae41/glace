@@ -70,8 +70,6 @@ export class Glace {
 
       stack.defer(() => document.close())
 
-      const integrity: Record<string, string> = {}
-
       const bundleAsScript = (async function* (this: Glace, script: HTMLScriptElement) {
         if (script.src) {
           const url = new URL(script.src)
@@ -96,19 +94,9 @@ export class Glace {
 
           const relative = redot(path.relative(exitpointdir, clientexitpoint))
 
-          integrity[`${relative}?integrity=${client.hash}`] = client.hash
-
           script.src = `${relative}?integrity=${client.hash}`
-          script.integrity = client.hash
 
-          const link = document.createElement("link")
-
-          link.rel = "modulepreload"
-          link.href = `${relative}?integrity=${client.hash}`
-
-          link.setAttribute("integrity", client.hash)
-
-          document.head.prepend(link)
+          script.setAttribute("integrity", client.hash)
 
           yield
 
@@ -159,8 +147,7 @@ export class Glace {
 
           const client = this.client.outputs.get(rawclientexitpoint)!
 
-          script.textContent = client.text
-          script.integrity = client.hash
+          script.textContent = `\n    ${client.text.trim()}\n  `
 
           yield
 
@@ -246,46 +233,6 @@ export class Glace {
         return
       }).bind(this)
 
-      // deno-lint-ignore require-yield
-      const bundleAsModulepreloadLink = (async function* (this: Glace, link: HTMLLinkElement) {
-        const url = new URL(link.href)
-
-        if (url.protocol !== "file:")
-          return
-        if (path.relative(this.entryrootdir, url.pathname).startsWith(".."))
-          return
-        if (!existsSync(url.pathname))
-          return
-
-        const data = await readFile(url.pathname)
-        const hash = crypto.createHash("sha256").update(data).digest("base64")
-
-        link.href = `${link.href}?integrity=${hash}`
-        link.setAttribute("integrity", `sha256-${hash}`)
-
-        return
-      }).bind(this)
-
-      // deno-lint-ignore require-yield
-      const bundleAsPreloadLink = (async function* (this: Glace, link: HTMLLinkElement) {
-        const url = new URL(link.href)
-
-        if (url.protocol !== "file:")
-          return
-        if (path.relative(this.entryrootdir, url.pathname).startsWith(".."))
-          return
-        if (!existsSync(url.pathname))
-          return
-
-        const data = await readFile(url.pathname)
-        const hash = crypto.createHash("sha256").update(data).digest("base64")
-
-        link.href = `${link.href}?integrity=${hash}`
-        link.setAttribute("integrity", `sha256-${hash}`)
-
-        return
-      }).bind(this)
-
       const bundles = new Array<AsyncGenerator<void, void, unknown>>()
 
       for (const script of document.querySelectorAll("script"))
@@ -294,10 +241,6 @@ export class Glace {
         bundles.push(bundleAsStyle(style as unknown as HTMLStyleElement))
       for (const link of document.querySelectorAll("link[rel=stylesheet]"))
         bundles.push(bundleAsStylesheetLink(link as unknown as HTMLLinkElement))
-      for (const link of document.querySelectorAll("link[rel=preload]"))
-        bundles.push(bundleAsPreloadLink(link as unknown as HTMLLinkElement))
-      for (const link of document.querySelectorAll("link[rel=modulepreload]"))
-        bundles.push(bundleAsModulepreloadLink(link as unknown as HTMLLinkElement))
 
       await Promise.all(bundles.map(g => g.next())) // prepare clients
 
@@ -306,13 +249,6 @@ export class Glace {
       await Promise.all(bundles.map(g => g.next())) // finalize clients and prepare statics
 
       yield // wait static build
-
-      const importmap = document.createElement("script")
-
-      importmap.type = "importmap"
-      importmap.textContent = JSON.stringify({ integrity })
-
-      document.head.prepend(importmap)
 
       window.location.href = `file://${exitpoint}?${new URLSearchParams(params).toString()}`
 

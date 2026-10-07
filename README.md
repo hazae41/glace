@@ -81,7 +81,7 @@ You can branch on browser or static execution using `process.env.PLATFORM`
 
 #### Subresource Integrity
 
-All scripts, whether inline or external, will have their `integrity` attribute automatically computed. 
+All external scripts and styles will have their `integrity` attribute automatically computed. 
 
 ```html
 <script type="module" src="./index.tsx"></script>
@@ -89,18 +89,6 @@ All scripts, whether inline or external, will have their `integrity` attribute a
 
 ```html
 <script type="module" src="./index.js" integrity="sha256-xP+cym0GRdm2J0F0v39EBGjOtHbuY8qEHoeQrqrhgcs="></script>
-```
-
-External scripts will also be included in a `modulepreload` link
-
-```html
-<link rel="modulepreload" href="./index.js" integrity="sha256-xP+cym0GRdm2J0F0v39EBGjOtHbuY8qEHoeQrqrhgcs=" />
-```
-
-And an importmap will be generated with the integrity of external scripts
-
-```html
-<script type="importmap">{"integrity":{"./index.js":"sha256-xP+cym0GRdm2J0F0v39EBGjOtHbuY8qEHoeQrqrhgcs="}}</script>
 ```
 
 ### Service-worker
