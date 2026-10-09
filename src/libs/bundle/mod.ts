@@ -1,7 +1,6 @@
 import esbuild, { type BuildContext, type BuildOptions, type OutputFile } from "esbuild";
 import crypto from "node:crypto";
 import { mkdir, rm } from "node:fs/promises";
-import { builtinModules } from "node:module";
 import path from "node:path";
 import type { Nullable } from "../nullable/mod.ts";
 
@@ -59,12 +58,11 @@ export class Builder {
       bundle: true,
       format: "esm",
       minify: false,
-      target: "es2024",
+      target: "es2025",
       entryPoints: inputs,
       platform: this.platform,
       outdir: this.exitrootdir,
       outbase: this.entryrootdir,
-      external: ["node:*", ...builtinModules],
       sourcemap: this.mode === "production" ? false : "linked",
       define: { "process.env.PLATFORM": JSON.stringify(this.platform), "process.env.NODE_ENV": JSON.stringify(this.mode) },
       banner: this.platform === "node" ? { js: `import { createRequire } from "node:module"; const require = createRequire(import.meta.url);` } : {}
